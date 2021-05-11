@@ -81,7 +81,6 @@
 		353280A11FA72871005175F3 /* InstructionLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 353280A01FA72871005175F3 /* InstructionLabel.swift */; };
 		353610CE1FAB6A8F00FB1746 /* BottomBannerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 353610CD1FAB6A8F00FB1746 /* BottomBannerViewController.swift */; };
 		35379CFD21480C0500FD402E /* AppDelegate+CarPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35379CFB21480BFB00FD402E /* AppDelegate+CarPlay.swift */; };
-		35379D0321480E5700FD402E /* RecentItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352C35BF2134958F00D77796 /* RecentItem.swift */; };
 		353AA5601FCEF583009F0384 /* StyleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 353AA55F1FCEF583009F0384 /* StyleManager.swift */; };
 		353E3C8F20A3501C00FD1789 /* MapboxMapsStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 353E3C8E20A3501C00FD1789 /* MapboxMapsStyle.swift */; };
 		353E68FC1EF0B7F8007B2AE5 /* NavigationLocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 353E68FB1EF0B7F8007B2AE5 /* NavigationLocationManager.swift */; };
@@ -317,6 +316,7 @@
 		B4A78D30261FD47700FDF212 /* route-with-road-classes-single-congestion.json in Resources */ = {isa = PBXBuildFile; fileRef = B47C1AFC261FD0A30078546C /* route-with-road-classes-single-congestion.json */; };
 		B4A78D31261FD47700FDF212 /* route-with-lanes.json in Resources */ = {isa = PBXBuildFile; fileRef = B47C1AFD261FD0A30078546C /* route-with-lanes.json */; };
 		B4A78D32261FD47700FDF212 /* sthlm-double-back.json in Resources */ = {isa = PBXBuildFile; fileRef = B47C1AFE261FD0A30078546C /* sthlm-double-back.json */; };
+		C367C28B26498D02008DFCA4 /* RecentItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = C367C28A26498D02008DFCA4 /* RecentItems.swift */; };
 		C51511D120EAC89D00372A91 /* CPMapTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51511D020EAC89D00372A91 /* CPMapTemplate.swift */; };
 		C51DF8661F38C31C006C6A15 /* Locale.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51DF8651F38C31C006C6A15 /* Locale.swift */; };
 		C51FC31720F689F800400CE7 /* CustomStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51FC31620F689F800400CE7 /* CustomStyles.swift */; };
@@ -596,7 +596,6 @@
 		3527D2B61EC45FBD00C07FC9 /* Fixtures.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Fixtures.xcassets; sourceTree = "<group>"; };
 		3529FCF521A5C5D900AEA9AA /* UIViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = UIViewController.swift; path = Example/UIViewController.swift; sourceTree = "<group>"; };
 		352AFFA22139986E00EB3567 /* UIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewController.swift; sourceTree = "<group>"; };
-		352C35BF2134958F00D77796 /* RecentItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentItem.swift; sourceTree = "<group>"; };
 		352F464C20EB74C200147886 /* NavigationEventsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationEventsManager.swift; sourceTree = "<group>"; };
 		3531C2671F9DDC6E00D92F9A /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Main.strings"; sourceTree = "<group>"; };
 		3531C2691F9DDC6F00D92F9A /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/Navigation.strings"; sourceTree = "<group>"; };
@@ -733,6 +732,8 @@
 		8A2081C925E07CED00F9B8A6 /* NavigationMapViewIdentifiers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavigationMapViewIdentifiers.swift; sourceTree = "<group>"; };
 		8A2081CA25E07CED00F9B8A6 /* RouteLineType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RouteLineType.swift; sourceTree = "<group>"; };
 		8A285E232637859800B11ECD /* OrnamentsController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OrnamentsController.swift; sourceTree = "<group>"; };
+		8A2081C925E07CED00F9B8A6 /* NavigationMapViewIdentifiers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavigationMapViewIdentifiers.swift; sourceTree = "<group>"; };
+		8A2081CA25E07CED00F9B8A6 /* RouteLineType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RouteLineType.swift; sourceTree = "<group>"; };
 		8A2DFA8526168A300034A87E /* NavigationCameraDebugView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavigationCameraDebugView.swift; sourceTree = "<group>"; };
 		8A30113B25DDCC8A00CE192A /* NavigationCameraConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationCameraConstants.swift; sourceTree = "<group>"; };
 		8A3A218F25EEC00200EDA999 /* CoreNavigationNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreNavigationNavigator.swift; sourceTree = "<group>"; };
@@ -873,6 +874,7 @@
 		B47C1B04261FD0A30078546C /* turn_left.data */ = {isa = PBXFileReference; lastKnownFileType = file; path = turn_left.data; sourceTree = "<group>"; };
 		B48CEFAB25796F5A00696BB3 /* route-for-vanishing-route-line.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "route-for-vanishing-route-line.json"; sourceTree = "<group>"; };
 		B4D4291826260D5900EE92A8 /* MBXInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = MBXInfo.plist; sourceTree = "<group>"; };
+		C367C28A26498D02008DFCA4 /* RecentItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentItems.swift; sourceTree = "<group>"; };
 		C51511D020EAC89D00372A91 /* CPMapTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPMapTemplate.swift; sourceTree = "<group>"; };
 		C51DF8651F38C31C006C6A15 /* Locale.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Locale.swift; sourceTree = "<group>"; };
 		C51FC31620F689F800400CE7 /* CustomStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CustomStyles.swift; path = Example/CustomStyles.swift; sourceTree = "<group>"; };
@@ -1210,8 +1212,8 @@
 				8D4B60E6219CBEB300C41906 /* CarPlayManagerDelegate.swift */,
 				16EF6C21211BA4B300AA580B /* CarPlayMapViewController.swift */,
 				C5FFAC1420D96F5B009E7F98 /* CarPlayNavigationViewController.swift */,
-				352C35BF2134958F00D77796 /* RecentItem.swift */,
 				358E31D522562697009B3EC2 /* CarPayCompassView.swift */,
+				C367C28A26498D02008DFCA4 /* RecentItems.swift */,
 			);
 			name = CarPlay;
 			sourceTree = "<group>";
@@ -2578,6 +2580,7 @@
 				F4BF512E24EAD7A50066A49B /* FeedbackSubtypeCollectionViewCell.swift in Sources */,
 				351BEC011E5BCC63006FE110 /* ManeuverView.swift in Sources */,
 				35B1E2951F1FF8EC00A13D32 /* UserCourseView.swift in Sources */,
+				C367C28B26498D02008DFCA4 /* RecentItems.swift in Sources */,
 				8DDBFCA32205016E0064DEBB /* NavigationCustomizable.swift in Sources */,
 				3531C2701F9E095400D92F9A /* InstructionsBannerView.swift in Sources */,
 				2B8098432411447E00FED452 /* MultiplexedSpeechSynthesizer.swift in Sources */,
@@ -2645,7 +2648,6 @@
 				8D4B60E7219CBEB300C41906 /* CarPlayManagerDelegate.swift in Sources */,
 				3EA9369C33A8F10DAE9043AA /* ImageDownloader.swift in Sources */,
 				3EA9301B03F8679BEDD4795F /* Cache.swift in Sources */,
-				35379D0321480E5700FD402E /* RecentItem.swift in Sources */,
 				1FFDFD92249C1AA80091746A /* JunctionView.swift in Sources */,
 				8A41F63D25BF631500BD6FCF /* NavigationMapView+BuildingHighlighting.swift in Sources */,
 			);
