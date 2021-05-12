@@ -75,14 +75,7 @@ extension CarPlaySearchController: CPListTemplateDelegate {
 }
 
 extension GeocodedPlacemark {
-    @available(iOS 12.0, *)
-    func listItem() -> CPListItem {
-        let item = CPListItem(text: formattedName, detailText: subtitle, image: nil, showsDisclosureIndicator: true)
-        item.userInfo = [CarPlaySearchController.CarPlayGeocodedPlacemarkKey: self]
-        return item
-    }
-    
-    var subtitle: String? {
+    open var subtitle: String? {
         if let addressDictionary = addressDictionary, var lines = addressDictionary["formattedAddressLines"] as? [String] {
             // Chinese addresses have no commas and are reversed.
             if scope == .address {
@@ -92,19 +85,19 @@ extension GeocodedPlacemark {
                     lines.removeLast()
                 }
             }
-            
+
             if let regionCode = administrativeRegion?.code,
                let abbreviatedRegion = regionCode.components(separatedBy: "-").last, (abbreviatedRegion as NSString).intValue == 0 {
                 // Cut off country and postal code and add abbreviated state/region code at the end.
-                
+
                 let stitle = lines.prefix(2).joined(separator: NSLocalizedString("ADDRESS_LINE_SEPARATOR", value: ", ", comment: "Delimiter between lines in an address when displayed inline"))
-                
+
                 if scope == .region || scope == .district || scope == .place || scope == .postalCode {
                     return stitle
                 }
                 return stitle.appending("\(NSLocalizedString("ADDRESS_LINE_SEPARATOR", value: ", ", comment: "Delimiter between lines in an address when displayed inline"))\(abbreviatedRegion)")
             }
-            
+
             if scope == .country {
                 return ""
             }
@@ -113,7 +106,7 @@ extension GeocodedPlacemark {
             }
             return lines.joined()
         }
-        
+
         return description
     }
 }

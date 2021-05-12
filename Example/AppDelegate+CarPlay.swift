@@ -155,9 +155,9 @@ extension AppDelegate: CarPlayManagerDelegate {
 @available(iOS 12.0, *)
 extension AppDelegate: CarPlaySearchControllerDelegate {
     struct RecentsHolder {
-        static var _recentItems:[Recentitem] = Recentitem.loadDefaults()
-        static var _recentSearchItems:[CPListItem]? = []
-        static var _recentSearchText:String? = ""
+        static var _recentItems: [Recentitem] = Recentitem.loadDefaults()
+        static var _recentSearchItems: [CPListItem]? = []
+        static var _recentSearchText: String? = ""
     }
     
     var recentItems: [Recentitem] {
@@ -192,12 +192,6 @@ extension AppDelegate: CarPlaySearchControllerDelegate {
         static var extended: UInt = 10
     }
     
-//    fileprivate static let coarseLocationManager: CLLocationManager = {
-//        let coarseLocationManager = CLLocationManager()
-//        coarseLocationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
-//        return coarseLocationManager
-//    }()
-    
     func previewRoutes(to waypoint: Waypoint, completionHandler: @escaping () -> Void) {
         carPlayManager.previewRoutes(to: waypoint, completionHandler: completionHandler)
     }
@@ -218,6 +212,8 @@ extension AppDelegate: CarPlaySearchControllerDelegate {
     }
     
     func searchTemplate(_ searchTemplate: CPSearchTemplate, updatedSearchText searchText: String, completionHandler: @escaping ([CPListItem]) -> Void) {
+        recentSearchText = searchText
+        
         var items = recentSearches(searchText)
         
         // Search for placemarks using MapboxGeocoder.swift
@@ -253,7 +249,7 @@ extension AppDelegate: CarPlaySearchControllerDelegate {
     
     func forwardGeocodeOptions(_ searchText: String) -> ForwardGeocodeOptions {
         let options = ForwardGeocodeOptions(query: searchText)
-//        options.focalLocation = CarPlaySearchController.coarseLocationManager.location
+        options.focalLocation = CarPlaySearchController.coarseLocationManager.location
         options.locale = Locale.autoupdatingCurrent.languageCode == "en" ? nil : .autoupdatingCurrent
         var allScopes: PlacemarkScope = .all
         allScopes.remove(.postalCode)

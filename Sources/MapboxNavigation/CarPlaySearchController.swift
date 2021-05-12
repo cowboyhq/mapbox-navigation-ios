@@ -27,40 +27,6 @@ public protocol CarPlaySearchControllerDelegate: class, CPSearchTemplateDelegate
 // TODO: add comments to all public
 public struct NavGeocodedPlacemark: Equatable, Codable {
     public var title: String
-//    var subtitle: String? {
-//        if let addressDictionary = addressDictionary, var lines = addressDictionary["formattedAddressLines"] as? [String] {
-//            // Chinese addresses have no commas and are reversed.
-//            if scope == .address {
-//                if qualifiedName?.contains(", ") ?? false {
-//                    lines.removeFirst()
-//                } else {
-//                    lines.removeLast()
-//                }
-//            }
-//
-//            if let regionCode = administrativeRegion?.code,
-//               let abbreviatedRegion = regionCode.components(separatedBy: "-").last, (abbreviatedRegion as NSString).intValue == 0 {
-//                // Cut off country and postal code and add abbreviated state/region code at the end.
-//
-//                let stitle = lines.prefix(2).joined(separator: NSLocalizedString("ADDRESS_LINE_SEPARATOR", value: ", ", comment: "Delimiter between lines in an address when displayed inline"))
-//
-//                if scope == .region || scope == .district || scope == .place || scope == .postalCode {
-//                    return stitle
-//                }
-//                return stitle.appending("\(NSLocalizedString("ADDRESS_LINE_SEPARATOR", value: ", ", comment: "Delimiter between lines in an address when displayed inline"))\(abbreviatedRegion)")
-//            }
-//
-//            if scope == .country {
-//                return ""
-//            }
-//            if qualifiedName?.contains(", ") ?? false {
-//                return lines.joined(separator: NSLocalizedString("ADDRESS_LINE_SEPARATOR", value: ", ", comment: "Delimiter between lines in an address when displayed inline"))
-//            }
-//            return lines.joined()
-//        }
-//
-//        return description
-//    }
     public var address: String?
     public var location: CLLocation?
     public var routableLocations: [CLLocation]?
@@ -68,14 +34,14 @@ public struct NavGeocodedPlacemark: Equatable, Codable {
     
     enum CodingKeys: String, CodingKey {
         case title
-        case address
+        case address = "subtitle"
         case location
         case routableLocations
     }
     
     public init (from geocodedPlacemark: GeocodedPlacemark) {
         title = geocodedPlacemark.formattedName
-        address = geocodedPlacemark.address
+        address = geocodedPlacemark.subtitle
         location = geocodedPlacemark.location
         routableLocations = geocodedPlacemark.routableLocations
     }
@@ -83,8 +49,7 @@ public struct NavGeocodedPlacemark: Equatable, Codable {
     public init (from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
-        address = try container.decodeIfPresent(String.self, forKey: .address)
-        print("!!! DECODED ADDRESS: \(String(describing: address))")
+        address = try container.decode(String.self, forKey: .address)
         if let locationHolder = try container.decodeIfPresent(CLLocationModel.self, forKey: .location) {
             location = CLLocation(model: locationHolder)
         }
@@ -107,6 +72,12 @@ public struct NavGeocodedPlacemark: Equatable, Codable {
             lhs.address == rhs.address
     }
     
+    @available(iOS 12.0, *)
+    public func listItem() -> CPListItem {
+        let item = CPListItem(text: title, detailText: address, image: nil, showsDisclosureIndicator: true)
+        item.userInfo = [CarPlaySearchController.CarPlayGeocodedPlacemarkKey: self]
+        return item
+    }
 }
 
 extension CLLocation: Encodable {
@@ -149,16 +120,6 @@ struct CLLocationModel: Codable {
     let timestamp: Date
 }
 
-extension NavGeocodedPlacemark {
-    @available(iOS 12.0, *)
-    public func listItem() -> CPListItem {
-        print("!!! ADDRESS: \(String(describing: address))")
-        let item = CPListItem(text: title, detailText: "ADDRESS", image: nil, showsDisclosureIndicator: true)
-        item.userInfo = [CarPlaySearchController.CarPlayGeocodedPlacemarkKey: self]
-        return item
-    }
-}
-
 /**
  `CarPlaySearchController` is the main object responsible for managing the search feature on CarPlay.
  
@@ -172,17 +133,6 @@ public class CarPlaySearchController: NSObject {
      The completion handler that will process the list of search results initiated on CarPlay.
      */
     var searchCompletionHandler: (([CPListItem]) -> Void)?
-    
-    // TODO: Confirm that these properties can become public
-    /**
-     The most recent search results.
-     */
-//    public var recentSearchItems: [CPListItem]?
-    
-    /**
-     The most recent search text.
-     */
-//    public var recentSearchText: String?
     
     /**
      The `CarPlaySearchController` delegate.
