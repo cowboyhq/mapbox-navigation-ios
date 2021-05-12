@@ -174,7 +174,8 @@ class RouteMapViewController: UIViewController {
                 return
             }
             self?.showRouteIfNeeded()
-            mapView.localizeLabels()
+            // This causes a weird crash
+//            mapView.localizeLabels()
             mapView.showsTraffic = false
                         
             // FIXME: In case when building highlighting feature is enabled due to style changes and no info currently being stored
