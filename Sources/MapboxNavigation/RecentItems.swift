@@ -1,9 +1,8 @@
 import Foundation
-import MapboxGeocoder
 import CarPlay
-// TODO: fix camelcase for RecentItem
-public struct Recentitem: Equatable, Codable {
-    public static func ==(lhs: Recentitem, rhs: Recentitem) -> Bool {
+
+public struct RecentItem: Equatable, Codable {
+    public static func ==(lhs: RecentItem, rhs: RecentItem) -> Bool {
         return lhs.timestamp == rhs.timestamp && lhs.geocodedPlacemark == rhs.geocodedPlacemark
     }
 
@@ -20,14 +19,14 @@ public struct Recentitem: Equatable, Codable {
         }
     }
 
-    static public func loadDefaults() -> [Recentitem] {
-        let data = try? Data(contentsOf: Recentitem.filePathUrl)
+    static public func loadDefaults() -> [RecentItem] {
+        let data = try? Data(contentsOf: RecentItem.filePathUrl)
         let decoder = JSONDecoder()
-        if let data = data, let recentItems = try? decoder.decode([Recentitem].self, from: data) {
+        if let data = data, let recentItems = try? decoder.decode([RecentItem].self, from: data) {
             return recentItems.sorted(by: { $0.timestamp > $1.timestamp })
         }
 
-        return [Recentitem]()
+        return [RecentItem]()
     }
 
     public init(_ geocodedPlacemark: NavGeocodedPlacemark) {
@@ -40,14 +39,14 @@ public struct Recentitem: Equatable, Codable {
     }
 }
 
-extension Array where Element == Recentitem {
+extension Array where Element == RecentItem {
     public func save() {
         let encoder = JSONEncoder()
         let data = try? encoder.encode(self)
-        (try? data?.write(to: Recentitem.filePathUrl)) as ()??
+        (try? data?.write(to: RecentItem.filePathUrl)) as ()??
     }
 
-    public mutating func add(_ recentItem: Recentitem) {
+    public mutating func add(_ recentItem: RecentItem) {
         let existing = lazy.filter { $0.geocodedPlacemark == recentItem.geocodedPlacemark }.first
 
         guard let alreadyExisting = existing else {
@@ -61,7 +60,7 @@ extension Array where Element == Recentitem {
         add(updated)
     }
 
-    mutating func remove(_ recentItem: Recentitem) {
+    mutating func remove(_ recentItem: RecentItem) {
         if let index = firstIndex(of: recentItem) {
             remove(at: index)
         }

@@ -155,12 +155,12 @@ extension AppDelegate: CarPlayManagerDelegate {
 @available(iOS 12.0, *)
 extension AppDelegate: CarPlaySearchControllerDelegate {
     struct RecentsHolder {
-        static var _recentItems: [Recentitem] = Recentitem.loadDefaults()
+        static var _recentItems: [RecentItem] = RecentItem.loadDefaults()
         static var _recentSearchItems: [CPListItem]? = []
         static var _recentSearchText: String? = ""
     }
     
-    var recentItems: [Recentitem] {
+    var recentItems: [RecentItem] {
         get {
             return RecentsHolder._recentItems
         }
@@ -267,7 +267,7 @@ extension AppDelegate: CarPlaySearchControllerDelegate {
             return
         }
         
-        recentItems.add(Recentitem(placemark))
+        recentItems.add(RecentItem(placemark))
         recentItems.save()
         
         let destinationWaypoint = Waypoint(location: location, heading: nil, name: placemark.title)

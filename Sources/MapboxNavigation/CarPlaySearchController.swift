@@ -11,7 +11,7 @@ public protocol CarPlaySearchControllerDelegate: class, CPSearchTemplateDelegate
     func pushTemplate(_ template: CPTemplate, animated: Bool)
     func popTemplate(animated: Bool)
 
-    var recentItems: [Recentitem] { get set }
+    var recentItems: [RecentItem] { get set }
     var recentSearchItems: [CPListItem]? { get set }
     var recentSearchText: String? { get set }
     
