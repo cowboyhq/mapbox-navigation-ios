@@ -17,6 +17,10 @@ open class NavigationLocationManager: CLLocationManager {
             allowsBackgroundLocationUpdates = true
         }
     }
+
+    public var isSimulatedLocationSource: Bool {
+        return false
+    }
 }
 
 extension NavigationLocationManager: RouterDataSource {
