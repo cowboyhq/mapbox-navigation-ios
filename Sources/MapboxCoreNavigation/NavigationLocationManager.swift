@@ -18,7 +18,7 @@ open class NavigationLocationManager: CLLocationManager {
         }
     }
 
-    public var isSimulatedLocationSource: Bool {
+    open var isSimulatedLocationSource: Bool {
         return false
     }
 }
