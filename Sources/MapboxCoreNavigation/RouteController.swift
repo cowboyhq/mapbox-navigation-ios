@@ -283,7 +283,7 @@ open class RouteController: NSObject {
         if (newLegIndex != progress.legIndex) {
             progress.legIndex = newLegIndex
         }
-        if (newStepIndex != progress.currentLegProgress.stepIndex) && (newStepIndex < progress.currentLeg.steps.endIndex - 1) {
+        if (newStepIndex != progress.currentLegProgress.stepIndex) && (newStepIndex < progress.currentLeg.steps.endIndex) {
             progress.currentLegProgress.stepIndex = newStepIndex
         }
         
