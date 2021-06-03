@@ -506,6 +506,10 @@ extension NavigationViewController {
     public func toggleOverView() {
         self.mapViewController?.toggleOverview(self)
     }
+    
+    public func recenter() {
+        self.mapViewController?.recenter(self)
+    }
 }
 
 //MARK: - RouteMapViewControllerDelegate
