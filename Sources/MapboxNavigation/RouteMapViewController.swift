@@ -187,6 +187,7 @@ class RouteMapViewController: UIViewController {
         navigationView.muteButton.addTarget(self, action: Actions.mute, for: .touchUpInside)
         navigationView.reportButton.addTarget(self, action: Actions.feedback, for: .touchUpInside)
         navigationView.resumeButton.addTarget(self, action: Actions.recenter, for: .touchUpInside)
+        navigationView.resumeButton.isHidden = true
         resumeNotifications()
     }
 
