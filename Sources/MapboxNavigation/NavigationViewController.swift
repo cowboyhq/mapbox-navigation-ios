@@ -501,6 +501,13 @@ open class NavigationViewController: UIViewController, NavigationStatusPresenter
     }
 }
 
+/// MARK: - Cowboy custom actions
+extension NavigationViewController {
+    public func toggleOverView() {
+        self.mapViewController?.toggleOverview(self)
+    }
+}
+
 //MARK: - RouteMapViewControllerDelegate
 extension NavigationViewController: RouteMapViewControllerDelegate {
 

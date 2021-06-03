@@ -93,7 +93,7 @@ class RouteMapViewController: UIViewController {
         didSet {
             if isInOverviewMode {
                 navigationView.overviewButton.isHidden = true
-                navigationView.resumeButton.isHidden = false
+                navigationView.resumeButton.isHidden = true
                 navigationView.wayNameView.isHidden = true
                 mapView.logoView.isHidden = true
             } else {
@@ -275,7 +275,8 @@ class RouteMapViewController: UIViewController {
         mapView.addArrow(route: router.routeProgress.route, legIndex: legIndex, stepIndex: stepIndex)
     }
 
-    @objc func toggleOverview(_ sender: Any) {
+    @objc
+    func toggleOverview(_ sender: Any) {
         mapView.enableFrameByFrameCourseViewTracking(for: 3)
         if let shape = router.route.shape,
            let userLocation = router.location {
@@ -632,12 +633,12 @@ extension RouteMapViewController: NavigationViewDelegate {
 
     // MARK: NavigationMapViewCourseTrackingDelegate
     func navigationMapViewDidStartTrackingCourse(_ mapView: NavigationMapView) {
-        navigationView.resumeButton.isHidden = true
+//        navigationView.resumeButton.isHidden = true
         mapView.logoView.isHidden = false
     }
 
     func navigationMapViewDidStopTrackingCourse(_ mapView: NavigationMapView) {
-        navigationView.resumeButton.isHidden = false
+//        navigationView.resumeButton.isHidden = false
         navigationView.wayNameView.isHidden = true
         mapView.logoView.isHidden = true
     }
