@@ -98,6 +98,7 @@
 * Fixed an issue where the current road name label sometimes displayed the name of an intersecting road instead of the current road or blinked in and out. ([#3019](https://github.com/mapbox/mapbox-navigation-ios/pull/3019))
 * Fixed an issue where offline route calculation might hang up. ([#3040](https://github.com/mapbox/mapbox-navigation-ios/pull/3040))
 * Fixed the moment of custom feedback event creation. ([#3049](https://github.com/mapbox/mapbox-navigation-ios/pull/3049))
+* `NavigationEventsManager` now allows the application to include application metadata `NavigationEventsManager.userInfo` such as the application name and version in feedback events by including `userInfo` parameter of  `NavigationEventsManager.recordFeedback()`. ([#3007](https://github.com/mapbox/mapbox-navigation-ios/pull/3007)).
 
 ## v1.4.0
 
