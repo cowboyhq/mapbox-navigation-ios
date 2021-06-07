@@ -89,7 +89,7 @@ class NavigationServiceTests: XCTestCase {
         
         // Iterate over each location on the route and simulate location update
         locationsOnRoute.forEach {
-            navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0])
+            navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0])
             
             // Verify whether current location is located on the route
             XCTAssertTrue(navigation.router.userIsOnRoute($0), "User should be on the route")
@@ -111,7 +111,7 @@ class NavigationServiceTests: XCTestCase {
         // Even though first location is off the route as per navigation native logic it sometimes can return tracking route state
         // even if location is visually off-route.
         locationsOffRoute.enumerated().forEach {
-            navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0.element])
+            navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0.element])
             
             if ($0.offset == 0) {
                 XCTAssertTrue(navigation.router.userIsOnRoute($0.element), "For the first coordinate user is still on the route")
@@ -138,7 +138,7 @@ class NavigationServiceTests: XCTestCase {
                            timestamp: now + $0.offset)
             }
             
-            stepLocations.forEach { navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
+            stepLocations.forEach { navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
             
             XCTAssertTrue(navigation.router.userIsOnRoute(stepLocations.last!), "User should be on route")
         }
@@ -282,7 +282,7 @@ class NavigationServiceTests: XCTestCase {
         ])
         let route = Fixture.route(from: "straight-line", options: options)
         let navigationService = MapboxNavigationService(route: route, routeIndex: 0, routeOptions: options, directions: DirectionsSpy())
-        let router = navigationService.router!
+        let router = navigationService.router
         let firstCoordinate = router.routeProgress.nearbyShape.coordinates.first!
         let firstLocation = CLLocation(latitude: firstCoordinate.latitude, longitude: firstCoordinate.longitude)
         let coordinateNearStart = router.routeProgress.nearbyShape.coordinateFromStart(distance: 10)!
@@ -340,7 +340,7 @@ class NavigationServiceTests: XCTestCase {
     func testReroutingFromLocationUpdatesSimulatedLocationSource() {
         let navigationService = MapboxNavigationService(route: initialRoute, routeIndex: 0, routeOptions: routeOptions,  directions: directionsClientSpy, eventsManagerType: NavigationEventsManagerSpy.self, simulating: .always)
         navigationService.delegate = delegate
-        let router = navigationService.router!
+        let router = navigationService.router
 
         navigationService.eventsManager.delaysEventFlushing = false
         navigationService.start()
@@ -357,7 +357,7 @@ class NavigationServiceTests: XCTestCase {
 
     func testReroutingFromALocationSendsEvents() {
         let navigationService = dependencies.navigationService
-        let router = navigationService.router!
+        let router = navigationService.router
         let testLocation = dependencies.routeLocations.firstLocation
 
         navigationService.eventsManager.delaysEventFlushing = false
@@ -417,10 +417,10 @@ class NavigationServiceTests: XCTestCase {
 
         let now = Date()
         let trace = Fixture.generateTrace(for: route).shiftedToPresent()
-        trace.forEach { navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
+        trace.forEach { navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
 
         // TODO: Verify why we need a second location update when routeState == .complete to trigger `MMEEventTypeNavigationArrive`
-        navigation.router!.locationManager!(navigation.locationManager,
+        navigation.router.locationManager!(navigation.locationManager,
                                             didUpdateLocations: [trace.last!.shifted(to: now + (trace.count + 1))])
 
         // MARK: It queues and flushes a Depart event
@@ -562,7 +562,7 @@ class NavigationServiceTests: XCTestCase {
         let directions = DirectionsSpy()
         let service = MapboxNavigationService(route: route, routeIndex: 0, routeOptions: options, directions: directions)
         service.delegate = delegate
-        let router = service.router!
+        let router = service.router
         let locationManager = NavigationLocationManager()
 
         let _ = expectation(forNotification: .routeControllerDidReroute, object: router) { (notification) -> Bool in
@@ -572,9 +572,9 @@ class NavigationServiceTests: XCTestCase {
         let rerouteExpectation = expectation(description: "Proactive reroute should trigger")
 
         for location in trace {
-            service.router!.locationManager!(locationManager, didUpdateLocations: [location])
+            service.router.locationManager!(locationManager, didUpdateLocations: [location])
 
-            let router = service.router! as! RouterComposition
+            let router = service.router as! RouterComposition
 
             if router.lastRerouteLocation != nil {
                 rerouteExpectation.fulfill()

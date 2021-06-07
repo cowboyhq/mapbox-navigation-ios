@@ -109,7 +109,7 @@ class MapboxCoreNavigationTests: XCTestCase {
         
         navigation.start()
         
-        locations.forEach { navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0])}
+        locations.forEach { navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0])}
         
         waitForExpectations(timeout: waitForInterval) { (error) in
             XCTAssertNil(error)
@@ -132,7 +132,7 @@ class MapboxCoreNavigationTests: XCTestCase {
         
         navigation.start()
         
-        locations.forEach { navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
+        locations.forEach { navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0]) }
         
         waitForExpectations(timeout: waitForInterval) { (error) in
             XCTAssertNil(error)
@@ -166,7 +166,7 @@ class MapboxCoreNavigationTests: XCTestCase {
         navigation.start()
         
         (locations + offRouteLocations).forEach {
-            navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [$0])
+            navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [$0])
         }
         
         waitForExpectations(timeout: waitForInterval) { (error) in
@@ -278,7 +278,7 @@ class MapboxCoreNavigationTests: XCTestCase {
             let _ = navigation.router.location
             let _ = (navigation.router as? RouteController)?.snappedLocation
             
-            navigation.router!.locationManager!(navigation.locationManager, didUpdateLocations: [location])
+            navigation.router.locationManager!(navigation.locationManager, didUpdateLocations: [location])
         }
         
         waitForExpectations(timeout: 2) { (error) in

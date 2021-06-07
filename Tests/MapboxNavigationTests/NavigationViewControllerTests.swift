@@ -22,7 +22,7 @@ class NavigationViewControllerTests: XCTestCase {
         navigationViewController.delegate = self
         
         let navigationService = navigationViewController.navigationService!
-        let router = navigationService.router!
+        let router = navigationService.router
         let firstCoord      = router.routeProgress.nearbyShape.coordinates.first!
         let firstLocation   = location(at: firstCoord)
         
