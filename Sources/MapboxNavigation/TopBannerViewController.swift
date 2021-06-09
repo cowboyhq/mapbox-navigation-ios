@@ -136,6 +136,10 @@ open class TopBannerViewController: UIViewController {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
     
+    public init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+    
     override open func viewDidLoad() {
         view.backgroundColor = .clear
         super.viewDidLoad()

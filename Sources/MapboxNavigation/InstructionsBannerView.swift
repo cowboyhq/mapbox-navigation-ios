@@ -113,6 +113,11 @@ open class BaseInstructionsBannerView: UIControl {
         commonInit()
     }
     
+    public init() {
+        super.init(frame: .zero)
+        commonInit()
+    }
+    
     func commonInit() {
         setupViews()
         setupLayout()
