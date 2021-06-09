@@ -48,12 +48,12 @@ public extension TopBannerViewControllerDelegate {
  This class is the default top banner view controller used by `NavigationOptions` and `NavigationViewController`. `InstructionsCardViewController` provides an alternative, user notification–like interface.
  */
 open class TopBannerViewController: UIViewController {
-    weak var delegate: TopBannerViewControllerDelegate? = nil
+    public weak var delegate: TopBannerViewControllerDelegate? = nil
     
-    lazy var topPaddingView: TopBannerView = .forAutoLayout()
+    public lazy var topPaddingView: TopBannerView = .forAutoLayout()
     
-    lazy var stepsContainer: UIView = .forAutoLayout()
-    var stepsViewController: StepsViewController?
+    public lazy var stepsContainer: UIView = .forAutoLayout()
+    public var stepsViewController: StepsViewController?
     
     var routeProgress: RouteProgress?
     
@@ -84,9 +84,9 @@ open class TopBannerViewController: UIViewController {
     
     lazy var informationStackBottomPinConstraint: NSLayoutConstraint = view.bottomAnchor.constraint(equalTo: informationStackView.bottomAnchor)
     
-    lazy var informationStackView = UIStackView(orientation: .vertical, autoLayout: true)
+    public lazy var informationStackView = UIStackView(orientation: .vertical, autoLayout: true)
     
-    lazy var instructionsBannerView: InstructionsBannerView = {
+    public lazy var instructionsBannerView: InstructionsBannerView = {
         let banner: InstructionsBannerView = .forAutoLayout()
         banner.heightAnchor.constraint(equalToConstant: instructionsBannerHeight).isActive = true
         banner.delegate = self
@@ -94,15 +94,15 @@ open class TopBannerViewController: UIViewController {
         return banner
     }()
     
-    lazy var lanesView: LanesView = .forAutoLayout(hidden: true)
-    lazy var nextBannerView: NextBannerView = .forAutoLayout(hidden: true)
-    lazy var statusView: StatusView = {
+    public lazy var lanesView: LanesView = .forAutoLayout(hidden: true)
+    public lazy var nextBannerView: NextBannerView = .forAutoLayout(hidden: true)
+    public lazy var statusView: StatusView = {
         let view: StatusView = .forAutoLayout()
         view.isHidden = true
         return view
     }()
     
-    lazy var junctionView: JunctionView = {
+    public lazy var junctionView: JunctionView = {
         let view: JunctionView = .forAutoLayout()
         view.isHidden = true
         return view
