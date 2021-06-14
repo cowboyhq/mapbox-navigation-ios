@@ -54,7 +54,7 @@ class NativeHandlersFactory {
     }()
     
     lazy var tileStore: TileStore = {
-        TileStore.__getInstanceForPath(tileStorePath)
+        TileStore.createForPath(tileStorePath)
     }()
     
     // MARK: - Support objects
@@ -73,7 +73,7 @@ class NativeHandlersFactory {
     
     lazy var tilesConfig: TilesConfig = {
         TilesConfig(tilesPath: tileStorePath,
-                    tileStore: TileStore.__getInstanceForPath(tileStorePath),
+                    tileStore: TileStore.createForPath(tileStorePath),
                     inMemoryTileCache: nil,
                     onDiskTileCache: nil,
                     mapMatchingSpatialCache: nil,
