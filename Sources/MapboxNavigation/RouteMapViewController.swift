@@ -130,12 +130,19 @@ class RouteMapViewController: UIViewController {
      */
     var suppressAutomaticAltitudeChanges: Bool = false
 
-    convenience init(navigationService: NavigationService, delegate: RouteMapViewControllerDelegate? = nil, topBanner: ContainerViewController, bottomBanner: ContainerViewController) {
+    convenience init(
+        navigationService: NavigationService,
+        delegate: RouteMapViewControllerDelegate? = nil,
+        topBanner: ContainerViewController,
+        bottomBanner: ContainerViewController,
+        cameraUserTrackingCourseEdgePadding: UIEdgeInsets = .zero
+    ) {
         self.init()
         self.navService = navigationService
         self.delegate = delegate
         automaticallyAdjustsScrollViewInsets = false
         let topContainer = navigationView.topBannerContainerView
+        navigationView.mapView.cameraUserTrackingCourseEdgePadding = cameraUserTrackingCourseEdgePadding
         
         embed(topBanner, in: topContainer) { (parent, banner) -> [NSLayoutConstraint] in
             banner.view.translatesAutoresizingMaskIntoConstraints = false

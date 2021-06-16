@@ -289,15 +289,21 @@ open class NavigationViewController: UIViewController, NavigationStatusPresenter
     
     /**
      Initializes a navigation view controller that presents the user interface for following a predefined route based on the given options.
-
+     
      The route may come directly from the completion handler of the [MapboxDirections](https://docs.mapbox.com/ios/api/directions/) framework’s `Directions.calculate(_:completionHandler:)` method, or it may be unarchived or created from a JSON object.
      
      - parameter route: The route to navigate along.
      - parameter routeIndex: The index of the route within the original `RouteResponse` object.
      - parameter routeOptions: The route options used to get the route.
      - parameter navigationOptions: The navigation options to use for the navigation session.
+     - parameter cameraUserTrackingCourseEdgePadding: when user course tracking is active this is used to position the user course puck.
      */
-    required public init(for route: Route, routeIndex: Int, routeOptions: RouteOptions, navigationOptions: NavigationOptions? = nil) {
+    required public init(
+        for route: Route,
+        routeIndex: Int, routeOptions: RouteOptions,
+        navigationOptions: NavigationOptions? = nil,
+        cameraUserTrackingCourseEdgePadding: UIEdgeInsets = .zero
+    ) {
         super.init(nibName: nil, bundle: nil)
         
         self.navigationService = navigationOptions?.navigationService ?? MapboxNavigationService(route: route, routeIndex: routeIndex, routeOptions: routeOptions)
@@ -328,9 +334,16 @@ open class NavigationViewController: UIViewController, NavigationStatusPresenter
             topViewController = defaultBanner
         }
         
-        let mapViewController = RouteMapViewController(navigationService: self.navigationService, delegate: self, topBanner: topViewController!, bottomBanner: bottomBanner)
+        let mapViewController = RouteMapViewController(
+            navigationService: self.navigationService,
+            delegate: self,
+            topBanner: topViewController!,
+            bottomBanner: bottomBanner
+        )
         
         self.mapViewController = mapViewController
+        self.mapViewController?.mapView.cameraUserTrackingCourseEdgePadding = cameraUserTrackingCourseEdgePadding
+
         mapViewController.destination = route.legs.last?.destination
         mapViewController.view.translatesAutoresizingMaskIntoConstraints = false
         
