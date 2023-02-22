@@ -1,3 +1,5 @@
+import CoreLocation
+import MapboxCoreNavigation
 import MapboxDirections
 import Turf
 
@@ -41,11 +43,122 @@ extension Route {
             return LineString(trimmedPrecedingCoordinates + followingPolyline.trimmed(from: followingPolyline.coordinates[0], distance: distance)!.coordinates.suffix(from: 1))
         }
     }
+    
+    func restrictedRoadsFeatures() -> [Feature] {
+        guard shape != nil else { return [] }
+        
+        var hasRestriction = false
+        var features: [Feature] = []
+        
+        for leg in legs {
+            let legRoadClasses = leg.roadClasses
+            
+            // The last coordinate of the preceding step, is shared with the first coordinate of the next step, we don't need both.
+            let legCoordinates: [CLLocationCoordinate2D] = leg.steps.enumerated().reduce([]) { allCoordinates, current in
+                let index = current.offset
+                let step = current.element
+                let stepCoordinates = step.shape!.coordinates
+                
+                return index == 0 ? stepCoordinates : allCoordinates + stepCoordinates.suffix(from: 1)
+            }
+            
+            let mergedRoadClasses = legCoordinates.combined(legRoadClasses,
+                                                            combiningRoadClasses: .restricted)
+            
+            features.append(contentsOf: mergedRoadClasses.map { (roadClassesSegment: RoadClassesSegment) -> Feature in
+                var feature = Feature(geometry: .lineString(LineString(roadClassesSegment.0)))
+                feature.properties = [
+                    RestrictedRoadClassAttribute: .boolean(roadClassesSegment.1 == .restricted),
+                ]
+                
+                if !hasRestriction && roadClassesSegment.1 == .restricted {
+                    hasRestriction = true
+                }
+                
+                return feature
+            })
+        }
+        
+        return hasRestriction ? features : []
+    }
+    
+    func congestionFeatures(legIndex: Int? = nil,
+                            roadClassesWithOverriddenCongestionLevels: Set<MapboxStreetsRoadClass>? = nil) -> [Feature] {
+        guard let coordinates = shape?.coordinates, let shape = shape else { return [] }
+        var features: [Feature] = []
+        
+        for (index, leg) in legs.enumerated() {
+            let legFeatures: [Feature]
+            let currentLegAttribute = (legIndex != nil) ? index == legIndex : true
+
+            if let congestionLevels = leg.resolvedCongestionLevels, congestionLevels.count < coordinates.count + 2 {
+                // The last coordinate of the preceding step, is shared with the first coordinate of the next step, we don't need both.
+                let legCoordinates: [CLLocationCoordinate2D] = leg.steps.enumerated().reduce([]) { allCoordinates, current in
+                    let index = current.offset
+                    let step = current.element
+                    let stepCoordinates = step.shape!.coordinates
+                    
+                    return index == 0 ? stepCoordinates : allCoordinates + stepCoordinates.suffix(from: 1)
+                }
+                
+                let mergedCongestionSegments = legCoordinates.combined(congestionLevels,
+                                                                       streetsRoadClasses: leg.streetsRoadClasses,
+                                                                       roadClassesWithOverriddenCongestionLevels: roadClassesWithOverriddenCongestionLevels)
+                
+                legFeatures = mergedCongestionSegments.map { (congestionSegment: CongestionSegment) -> Feature in
+                    var feature = Feature(geometry: .lineString(LineString(congestionSegment.0)))
+                    feature.properties = [
+                        CongestionAttribute: .string(congestionSegment.1.rawValue),
+                        CurrentLegAttribute: .boolean(currentLegAttribute),
+                    ]
+                    
+                    return feature
+                }
+            } else {
+                var feature = Feature(geometry: .lineString(LineString(shape.coordinates)))
+                feature.properties = [
+                    CurrentLegAttribute: .boolean(currentLegAttribute),
+                ]
+                legFeatures = [feature]
+            }
+            
+            features.append(contentsOf: legFeatures)
+        }
+        
+        return features
+    }
+    
+    func identifier(_ routeLineType: RouteLineType) -> String {
+        // To have the ability to reliably distinguish `Route` objects their memory addresses are used
+        // as identifiers. `Route.routeIdentifier` is not enough in this case because it'll be the same
+        // for all routes requested via `Directions.calculate(_:completionHandler:)`.
+        let identifier = Unmanaged.passUnretained(self).toOpaque()
+    
+        switch routeLineType {
+        
+        case .source(isMainRoute: let isMainRoute, isSourceCasing: let isSourceCasing):
+            return "\(identifier).\(isMainRoute ? "main" : "alternative").\(isSourceCasing ? "source_casing" : "source")"
+        case .route(isMainRoute: let isMainRoute):
+            return "\(identifier).\(isMainRoute ? "main" : "alternative").route_line"
+        case .routeCasing(isMainRoute: let isMainRoute):
+            return "\(identifier).\(isMainRoute ? "main" : "alternative").route_line_casing"
+        case .traversedRoute:
+            return "\(identifier).traversed_route"
+        case .restrictedRouteAreaSource:
+            return "\(identifier).restricted_area_source"
+        case .restrictedRouteAreaRoute:
+            return "\(identifier).restricted_area_route_line"
+        }
+    }
+    
+    func leg(containing step: RouteStep) -> RouteLeg? {
+        return legs.first { $0.steps.contains(step) }
+    }
 
     var tollIntersections: [Intersection]? {
         let allSteps = legs.flatMap { return $0.steps }
 
-        let allIntersections = allSteps.compactMap { return $0.intersections }.reduce([], +)
+        let allIntersections = allSteps.flatMap { $0.intersections ?? [] }
         let intersectionsWithTolls = allIntersections.filter { return $0.tollCollection != nil }
 
         return intersectionsWithTolls
@@ -86,17 +199,17 @@ extension Route {
             return LineString(coordinateList)
         }
     }
+    
+    /**
+     Returns true if both the legIndex and stepIndex are valid in the route.
+     */
+    func containsStep(at legIndex: Int, stepIndex: Int) -> Bool {
+        return legs[safe: legIndex]?.steps.indices.contains(stepIndex) ?? false
+    }
 }
 
 extension RouteStep {
     func intersects(_ boundingBox: Turf.BoundingBox) -> Bool {
-        guard let coordinates = shape?.coordinates else { return false }
-
-        for coordinate in coordinates {
-            if boundingBox.contains(coordinate) {
-                return true
-            }
-        }
-        return false
+        return shape?.coordinates.contains(where: { boundingBox.contains($0) }) ?? false
     }
 }

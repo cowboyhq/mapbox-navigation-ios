@@ -1,40 +1,60 @@
+import CoreLocation
 import Foundation
 import MapboxDirections
 
+/**
+ A tuple that pairs an array of coordinates with level of traffic congestion along these coordinates.
+ */
 typealias CongestionSegment = ([CLLocationCoordinate2D], CongestionLevel)
 
 /**
- A stop dictionary representing the default line widths of the route line by zoom level when `NavigationMapViewDelegate.navigationMapView(_:routeStyleLayerWithIdentifier:source:)` is undefined.
- 
- You may use this constant in your implementation of `NavigationMapViewDelegate.navigationMapView(_:routeStyleLayerWithIdentifier:source:)` if you want to keep the default line widths but customize other aspects of the route line.
+ A tuple that pairs an array of coordinates with assigned road classes along these coordinates.
  */
-public let MBRouteLineWidthByZoomLevel: [Int: NSExpression] = [
-    10: NSExpression(forConstantValue: 8),
-    13: NSExpression(forConstantValue: 9),
-    16: NSExpression(forConstantValue: 11),
-    19: NSExpression(forConstantValue: 22),
-    22: NSExpression(forConstantValue: 28)
+typealias RoadClassesSegment = ([CLLocationCoordinate2D], RoadClasses)
+
+/**
+ A stop dictionary representing the default line widths of the route line by zoom level when `NavigationMapViewDelegate.navigationMapView(_:routeLineLayerWithIdentifier:sourceIdentifier:)` is undefined.
+ 
+ You may use this constant in your implementation of `NavigationMapViewDelegate.navigationMapView(_:routeLineLayerWithIdentifier:sourceIdentifier:)` if you want to keep the default line widths but customize other aspects of the route line.
+ */
+public var RouteLineWidthByZoomLevel: [Double: Double] = [
+    10.0: 8.0,
+    13.0: 9.0,
+    16.0: 11.0,
+    19.0: 22.0,
+    22.0: 28.0
 ]
 
 /**
- The minium distance remaining on a route before overhead zooming is stopped.
+ The minimum distance remaining on a route before overhead zooming is stopped.
  */
+@available(*, deprecated, message: "This value is no longer used.")
 public var NavigationMapViewMinimumDistanceForOverheadZooming: CLLocationDistance = 200
+
+/**
+ Attribute name for the route line that is used for identifying restricted areas along the route.
+ */
+public let RestrictedRoadClassAttribute = "isRestrictedRoad"
 
 /**
  Attribute name for the route line that is used for identifying whether a RouteLeg is the current active leg.
  */
-public let MBCurrentLegAttribute = "isCurrentLeg"
+public let CurrentLegAttribute = "isCurrentLeg"
 
 /**
  Attribute name for the route line that is used for identifying different `CongestionLevel` along the route.
  */
-public let MBCongestionAttribute = "congestion"
+public let CongestionAttribute = "congestion"
 
 /**
  The minimum volume for the device before a gentle warning is emitted when beginning navigation.
  */
 public let NavigationViewMinimumVolumeForWarning: Float = 0.3
+
+/**
+ The distance of fading color change between two different congestion level segments in meters.
+ */
+public var GradientCongestionFadingDistance: CLLocationDistance = 30.0
 
 extension Notification.Name {
     /**
@@ -43,7 +63,7 @@ extension Notification.Name {
      This notification is the equivalent of `StyleManagerDelegate.styleManager(_:didApply:)`.
      The user info dictionary contains the key `StyleManagerNotificationUserInfoKey.style` and `StyleManagerNotificationUserInfoKey.styleManager`.
      */
-    public static let styleManagerDidApplyStyle: Notification.Name = .init(rawValue: "MBStyleManagerDidApplyStyle")
+    public static let styleManagerDidApplyStyle: Notification.Name = .init(rawValue: "StyleManagerDidApplyStyle")
 }
 
 /**
@@ -68,3 +88,25 @@ public struct StyleManagerNotificationUserInfoKey: Hashable, Equatable, RawRepre
      */
     static let styleManagerKey: StyleManagerNotificationUserInfoKey = .init(rawValue: "styleManager")
 }
+
+/**
+ Distance (in meters), remaining on a current route leg, which is required for building highlighting
+ to start working.
+ */
+let DefaultApproachingDestinationThresholdDistance: CLLocationDistance = 250.0
+
+/**
+ Dictionary, which contains any custom user info related data on CarPlay (for example it's used by `CPTrip`,
+ while filling it with `CPRouteChoice` objects or for storing user information in `CPListItem`).
+ 
+ In case if `CPRouteChoice`, `CPListItem` or other `CarPlayUserInfo` dependant object uses different
+ type in `userInfo` it may lead to undefined behavior.
+ */
+public typealias CarPlayUserInfo = [String: Any?]
+
+/**
+ In case if distance to the next maneuver on the route is lower than the value defined in
+ `InstructionCardHighlightDistance`, `InstructionsCardView`'s background color will be highlighted
+ to a color defined in `InstructionsCardContainerView.highlightedBackgroundColor`.
+ */
+let InstructionCardHighlightDistance: CLLocationDistance = 152.4 // 500 ft

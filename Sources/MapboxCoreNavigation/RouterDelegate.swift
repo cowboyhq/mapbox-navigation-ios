@@ -11,6 +11,9 @@ import MapboxDirections
  - seealso: NavigationServiceDelegate
  */
 public protocol RouterDelegate: AnyObject, UnimplementedLogging {
+    
+    // MARK: Rerouting Logic
+    
     /**
      Returns whether the router should be allowed to calculate a new route.
      
@@ -24,13 +27,26 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
 
     /**
      Called immediately before the router calculates a new route.
-     
-     This method is called after `router(_:shouldRerouteFrom:)` is called, and before `router(_:didRerouteAlong:)` is called.
+
+     This method is called after `router(_:shouldRerouteFrom:)` is called, and before `router(_:modifiedOptionsForReroute:)` is called.
      
      - parameter router: The router that will calculate a new route.
      - parameter location: The user’s current location.
      */
     func router(_ router: Router, willRerouteFrom location: CLLocation)
+    
+    /**
+     When reroute is happening, router suggests to customize the `RouteOptions` used to calculate new route.
+     
+     This method is called after `router(_:willRerouteFrom:)` is called, and before `router(_:didRerouteAlong:)` is called. This method is not called on proactive rerouting.
+     
+     Default implementation does no modifications.
+     
+     - parameter router: The router that will calculate a new route.
+     - parameter options: Original `RouteOptions`.
+     - returns: Modified `RouteOptions`.
+     */
+    func router(_ router: Router, modifiedOptionsForReroute options: RouteOptions) -> RouteOptions
     
     /**
      Called when a location has been identified as unqualified to navigate on.
@@ -46,7 +62,7 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
     /**
      Called immediately after the router receives a new route.
      
-     This method is called after `router(_:willRerouteFrom:)` method is called.
+     This method is called after `router(_:modifiedOptionsForReroute:)` method is called.
      
      - parameter router: The router that has calculated a new route.
      - parameter route: The new route.
@@ -54,15 +70,77 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
     func router(_ router: Router, didRerouteAlong route: Route, at location: CLLocation?, proactive: Bool)
 
     /**
+     Called when router has detected a change in alternative routes list.
+     
+     - note: `LegacyRouteController` will never report alternative routes updates.
+     
+     - parameter router: The router reporting an update.
+     - parameter updatedAlternatives: Array of actual alternative routes.
+     - parameter removedAlternatives: Array of alternative routes which are no longer actual.
+     */
+    func router(_ router: Router, didUpdateAlternatives updatedAlternatives: [AlternativeRoute], removedAlternatives: [AlternativeRoute])
+    
+    /**
+     Called when router has failed to  change alternative routes list.
+     
+     - note: `LegacyRouteController` will never report alternative routes updates.
+     
+     - parameter router: The router reporting an update.
+     - parameter error: An error occured.
+     */
+    func router(_ router: Router, didFailToUpdateAlternatives error: AlternativeRouteError)
+    
+    /**
+     Called when router has detected user taking an alternative route.
+     
+     This method is called before updating router's main route.
+     
+     - note: `LegacyRouteController` will never report alternative routes updates.
+     
+     - parameter router: The router that has detected turning to the alternative.
+     - parameter route: The alternative route which will be taken as new main.
+     - parameter location: The user’s current location.
+     */
+    func router(_ router: Router, willTakeAlternativeRoute route: Route, at location: CLLocation?)
+    
+    /**
+     Called when router has finished switching to an alternative route
+     
+     This method is called after `router(_:willTakeAlternativeRoute:)`
+     
+     - note: `LegacyRouteController` will never report alternative routes updates.
+     
+     - parameter router: The router that switched to the alternative.
+     - parameter location: The user’s current location.
+     */
+    func router(_ router: Router, didTakeAlternativeRouteAt location: CLLocation?)
+    
+    /**
+     Called when router has failed to take an alternative route.
+     
+     This method is called after `router(_:willTakeAlternativeRoute:)`.
+     
+     This call would indicate that something went wrong during setting new main route.
+     
+     - note: `LegacyRouteController` will never report alternative routes updates.
+     
+     - parameter router: The router which tried to switch to the alternative.
+     - parameter location: The user’s current location.
+     */
+    func router(_ router: Router, didFailToTakeAlternativeRouteAt location: CLLocation?)
+    
+    /**
      Called when the router fails to receive a new route.
      
-     This method is called after `router(_:willRerouteFrom:)`.
+     This method is called after `router(_:modifiedOptionsForReroute:)`.
      
      - parameter router: The router that has calculated a new route.
      - parameter error: An error raised during the process of obtaining a new route.
      */
     func router(_ router: Router, didFailToRerouteWith error: Error)
 
+    // MARK: Monitoring Route Progress and Updates
+    
     /**
      Called immediately after the router refreshes the route.
      
@@ -82,20 +160,15 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
     func router(_ router: Router, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation)
     
     /**
-     Called when the router detects that the user has passed a point at which an instruction should be displayed.
-     - parameter router: The router that passed the instruction point.
-     - parameter instruction: The instruction to be presented.
-     - parameter routeProgress: The route progress object that the router is updating.
+     Called when the router arrives at a waypoint.
+     
+     You can implement this method to allow the router to continue check and reroute the user if needed. By default, the user will not be rerouted when arriving at a waypoint.
+     
+     - parameter router: The router that has arrived at a waypoint.
+     - parameter waypoint: The waypoint that the controller has arrived at.
+     - returns: True to prevent the router from checking if the user should be rerouted.
      */
-    func router(_ router: Router, didPassVisualInstructionPoint instruction: VisualInstructionBanner, routeProgress: RouteProgress)
-    
-    /**
-     Called when the router detects that the user has passed a point at which an instruction should be spoken.
-     - parameter router: The router that passed the instruction point.
-     - parameter instruction: The instruction to be spoken.
-     - parameter routeProgress: The route progress object that the router is updating.
-     */
-    func router(_ router: Router, didPassSpokenInstructionPoint instruction: SpokenInstruction, routeProgress: RouteProgress)
+    func router(_ router: Router, shouldPreventReroutesWhenArrivingAt waypoint: Waypoint) -> Bool
     
     /**
      Called as the router approaches a waypoint.
@@ -114,7 +187,7 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
      
      You can implement this method to prevent the router from automatically advancing to the next leg. For example, you can and show an interstitial sheet upon arrival and pause navigation by returning `false`, then continue the route when the user dismisses the sheet. If this method is unimplemented, the router automatically advances to the next leg when arriving at a waypoint.
      
-     - postcondition: If you return false, you must manually advance to the next leg: obtain the value of the `routeProgress` property, then increment the `RouteProgress.legIndex` property.
+     - postcondition: If you return false, you must manually advance to the next leg using `Router.advanceLegIndex(completionHandler:)` method.
      - parameter router: The router that has arrived at a waypoint.
      - parameter waypoint: The waypoint that the controller has arrived at.
      - returns: True to advance to the next leg, if any, or false to remain on the completed leg.
@@ -122,16 +195,23 @@ public protocol RouterDelegate: AnyObject, UnimplementedLogging {
     func router(_ router: Router, didArriveAt waypoint: Waypoint) -> Bool
     
     /**
-     Called when the router arrives at a waypoint.
-     
-     You can implement this method to allow the router to continue check and reroute the user if needed. By default, the user will not be rerouted when arriving at a waypoint.
-     
-     - parameter router: The router that has arrived at a waypoint.
-     - parameter waypoint: The waypoint that the controller has arrived at.
-     - returns: True to prevent the router from checking if the user should be rerouted.
+     Called when the router detects that the user has passed a point at which an instruction should be displayed.
+     - parameter router: The router that passed the instruction point.
+     - parameter instruction: The instruction to be presented.
+     - parameter routeProgress: The route progress object that the router is updating.
      */
-    func router(_ router: Router, shouldPreventReroutesWhenArrivingAt waypoint: Waypoint) -> Bool
+    func router(_ router: Router, didPassVisualInstructionPoint instruction: VisualInstructionBanner, routeProgress: RouteProgress)
+    
+    /**
+     Called when the router detects that the user has passed a point at which an instruction should be spoken.
+     - parameter router: The router that passed the instruction point.
+     - parameter instruction: The instruction to be spoken.
+     - parameter routeProgress: The route progress object that the router is updating.
+     */
+    func router(_ router: Router, didPassSpokenInstructionPoint instruction: SpokenInstruction, routeProgress: RouteProgress)
 
+    // MARK: Permissions Events
+    
     /**
      Called when the router will disable battery monitoring.
      
@@ -151,6 +231,11 @@ public extension RouterDelegate {
     
     func router(_ router: Router, willRerouteFrom location: CLLocation) {
         logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+    }
+    
+    func router(_ router: Router, modifiedOptionsForReroute options: RouteOptions) -> RouteOptions {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+        return options
     }
     
     func router(_ router: Router, shouldDiscard location: CLLocation) -> Bool {
@@ -195,6 +280,26 @@ public extension RouterDelegate {
     func routerShouldDisableBatteryMonitoring(_ router: Router) -> Bool {
         logUnimplemented(protocolType: RouterDelegate.self, level: .info)
         return RouteController.DefaultBehavior.shouldDisableBatteryMonitoring
+    }
+    
+    func router(_ router: Router, didUpdateAlternatives updatedAlternatives: [AlternativeRoute], removedAlternatives: [AlternativeRoute]) {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+    }
+    
+    func router(_ router: Router, didFailToUpdateAlternatives error: AlternativeRouteError) {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+    }
+    
+    func router(_ router: Router, willTakeAlternativeRoute route: Route, at location: CLLocation?) {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+    }
+    
+    func router(_ router: Router, didTakeAlternativeRouteAt location: CLLocation?) {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
+    }
+    
+    func router(_ router: Router, didFailToTakeAlternativeRouteAt location: CLLocation?) {
+        logUnimplemented(protocolType: RouterDelegate.self, level: .debug)
     }
 }
 

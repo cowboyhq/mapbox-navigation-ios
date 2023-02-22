@@ -1,37 +1,31 @@
 import XCTest
-import FBSnapshotTestCase
+import TestHelper
+import SnapshotTesting
 import MapboxDirections
 @testable import MapboxNavigation
 @testable import MapboxCoreNavigation
 
-class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
-    let imageRepository: ImageRepository = ImageRepository.shared
+class InstructionsBannerViewSnapshotTests: TestCase {
+    let spriteRepository: SpriteRepository = SpriteRepository.shared
 
     let asyncTimeout: TimeInterval = 2.0
 
     override func setUp() {
         super.setUp()
-        recordMode = false
-        agnosticOptions = [.OS, .device]
+        isRecording = false
 
         let i280Instruction = VisualInstruction.Component.image(image: .init(imageBaseURL: ShieldImage.i280.baseURL), alternativeText: .init(text: "I-280", abbreviation: nil, abbreviationPriority: 0))
         let us101Instruction = VisualInstruction.Component.image(image: .init(imageBaseURL: ShieldImage.us101.baseURL), alternativeText: .init(text: "US 101", abbreviation: nil, abbreviationPriority: 0))
 
-        imageRepository.storeImage(ShieldImage.i280.image, forKey: i280Instruction.cacheKey!, toDisk: false)
-        imageRepository.storeImage(ShieldImage.us101.image, forKey: us101Instruction.cacheKey!, toDisk: false)
-
+        spriteRepository.legacyCache.store(ShieldImage.i280.image, forKey: i280Instruction.cacheKey!, toDisk: false, completion: nil)
+        spriteRepository.legacyCache.store(ShieldImage.us101.image, forKey: us101Instruction.cacheKey!, toDisk: false, completion: nil)
         NavigationSettings.shared.distanceUnit = .mile
+        DayStyle().apply()
     }
 
     override func tearDown() {
-        let semaphore = DispatchSemaphore(value: 0)
-        imageRepository.resetImageCache {
-            semaphore.signal()
-        }
-        let semaphoreResult = semaphore.wait(timeout: XCTestCase.NavigationTests.timeout)
-        XCTAssert(semaphoreResult == .success, "Semaphore timed out")
-
         super.tearDown()
+        spriteRepository.resetCache()
     }
 
     func testSinglelinePrimary() {
@@ -49,7 +43,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: instructions, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testMultilinePrimary() {
@@ -66,7 +60,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: instructions, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testSinglelinePrimaryAndSecondary() {
@@ -84,7 +78,53 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: primary, secondaryInstruction: secondary))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
+    }
+    
+    func testSinglelinePrimaryAndSecondaryWithShield() {
+        spriteRepository.spriteCache.store(ShieldImage.shieldDay.image, forKey: spriteRepository.styleID!, toDisk: false, completion: nil)
+        spriteRepository.infoCache.store(Fixture.JSONFromFileNamed(name: "sprite-info"), spriteKey: spriteRepository.styleID!)
+        
+        let view = instructionsView()
+        styleInstructionsView(view)
+        
+        view.maneuverView.isStart = true
+        view.distance = 482
+        
+        let i280Shield = VisualInstruction.Component.ShieldRepresentation(baseURL: spriteRepository.baseURL, name: "us-interstate", textColor: "white", text: "280")
+        let i280Representation = VisualInstruction.Component.ImageRepresentation(imageBaseURL: ShieldImage.i280.baseURL, shield: i280Shield)
+        
+        let primary: [VisualInstruction.Component] = [
+            .image(image: i280Representation, alternativeText: .init(text: "I 280", abbreviation: nil, abbreviationPriority: 0)),
+            .text(text: .init(text: "South", abbreviation: nil, abbreviationPriority: 0)),
+        ]
+        let secondary = [VisualInstruction.Component.text(text: .init(text: "US 45 / Chicago", abbreviation: nil, abbreviationPriority: 0))]
+
+        view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: primary, secondaryInstruction: secondary))
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
+    }
+    
+    func testSinglelinePrimaryAndSecondaryWithNightShield() {
+        spriteRepository.spriteCache.store(ShieldImage.shieldNight.image, forKey: spriteRepository.styleID!, toDisk: false, completion: nil)
+        spriteRepository.infoCache.store(Fixture.JSONFromFileNamed(name: "sprite-info"), spriteKey: spriteRepository.styleID!)
+        
+        let view = instructionsView()
+        styleInstructionsView(view)
+        
+        view.maneuverView.isStart = true
+        view.distance = 482
+        
+        let i280Shield = VisualInstruction.Component.ShieldRepresentation(baseURL: spriteRepository.baseURL, name: "us-interstate", textColor: "white", text: "280")
+        let i280Representation = VisualInstruction.Component.ImageRepresentation(imageBaseURL: ShieldImage.i280.baseURL, shield: i280Shield)
+        
+        let primary: [VisualInstruction.Component] = [
+            .image(image: i280Representation, alternativeText: .init(text: "I 280", abbreviation: nil, abbreviationPriority: 0)),
+            .text(text: .init(text: "South", abbreviation: nil, abbreviationPriority: 0)),
+        ]
+        let secondary = [VisualInstruction.Component.text(text: .init(text: "US 45 / Chicago", abbreviation: nil, abbreviationPriority: 0))]
+
+        view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: primary, secondaryInstruction: secondary))
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testPrimaryShieldAndSecondary() {
@@ -101,7 +141,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.turn, .right, primaryInstruction: primary, secondaryInstruction: secondary))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testAbbreviateInstructions() {
@@ -123,7 +163,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.continue, .straightAhead, primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testAbbreviateInstructionsIncludingDelimiter() {
@@ -143,10 +183,10 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
             .text(text: .init(text: "20 West", abbreviation: "20 W", abbreviationPriority: 1)),
         ]
 
-        imageRepository.storeImage(ShieldImage.i280.image, forKey: primary.first!.cacheKey!)
+        spriteRepository.legacyCache.store(ShieldImage.i280.image, forKey: primary.first!.cacheKey!, toDisk: false, completion: nil)
         view.update(for: makeVisualInstruction(.continue, .straightAhead, primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testAbbreviateWestFremontAvenue() {
@@ -163,7 +203,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.continue, .straightAhead, primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testAdjacentShields() {
@@ -180,7 +220,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
 
         view.update(for: makeVisualInstruction(.continue, .straightAhead, primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testInstructionsAndNextInstructions() {
@@ -213,7 +253,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         nextBannerView.maneuverView.backgroundColor = .clear
         nextBannerView.maneuverView.isEnd = true
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testLongDistance() {
@@ -228,7 +268,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         let primary = [VisualInstruction.Component.text(text: .init(text: "中国 安徽省 宣城市 郎溪县", abbreviation: nil, abbreviationPriority: nil))]
         view.update(for: makeVisualInstruction(.continue, .straightAhead, primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testSweEngLongDistance() {
@@ -242,7 +282,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         let primary = [VisualInstruction.Component.text(text: .init(text: "Lorem Ipsum / Dolor Sit Amet", abbreviation: nil, abbreviationPriority: nil))]
         view.update(for: makeVisualInstruction(primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testUkrainianLongDistance() {
@@ -256,7 +296,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         let primary = [VisualInstruction.Component.text(text: .init(text: "Lorem Ipsum / Dolor Sit Amet", abbreviation: nil, abbreviationPriority: nil))]
         view.update(for: makeVisualInstruction(primaryInstruction: primary, secondaryInstruction: nil))
 
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testExitShields() {
@@ -278,7 +318,7 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         window.addSubview(view)
 
         view.update(for: makeVisualInstruction(.takeOffRamp, .right, primaryInstruction: primary, secondaryInstruction: [secondary]))
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
     }
 
     func testGenericShields() {
@@ -299,7 +339,75 @@ class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
         DayStyle().apply()
 
         view.update(for: makeVisualInstruction(.reachFork, .right, primaryInstruction: primary, secondaryInstruction: secondary))
-        verify(view)
+        assertImageSnapshot(matching: view, as: .image(precision: 0.95))
+    }
+    
+    func testGenericShieldAndExitViewWithCustomDayStyle() {
+        
+        class CustomDayStyle: DayStyle {
+            
+            required init() {
+                super.init()
+            }
+            
+            override func apply() {
+                super.apply()
+                
+                PrimaryLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = UIColor.green
+                SecondaryLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = UIColor.red
+                
+                GenericRouteShield.appearance().foregroundColor = UIColor.blue
+                GenericRouteShield.appearance().borderWidth = 1.0
+                
+                ExitView.appearance().foregroundColor = UIColor.yellow
+                ExitView.appearance().borderWidth = 1.0
+            }
+        }
+        
+        let window = UIWindow(frame: CGRect(origin: .zero, size: .iPhone6Plus))
+        let instructionsBannerView = instructionsView()
+        styleInstructionsView(instructionsBannerView)
+        instructionsBannerView.distance = 1400 // meters
+
+        let primaryInstruction: [VisualInstruction.Component] = [
+            .exitCode(text: .init(text: "15",
+                                  abbreviation: nil,
+                                  abbreviationPriority: nil)),
+            .delimiter(text: .init(text: "/",
+                                   abbreviation: nil,
+                                   abbreviationPriority: nil)),
+            .image(image: .init(imageBaseURL: nil),
+                   alternativeText: .init(text: "CTE",
+                                          abbreviation: nil,
+                                          abbreviationPriority: nil)),
+        ]
+        
+        let secondaryInstruction: [VisualInstruction.Component] = [
+            .image(image: .init(imageBaseURL: nil),
+                   alternativeText: .init(text: "SLE",
+                                          abbreviation: nil,
+                                          abbreviationPriority: nil)),
+            .delimiter(text: .init(text: "/",
+                                   abbreviation: nil,
+                                   abbreviationPriority: nil)),
+            .image(image: .init(imageBaseURL: nil),
+                   alternativeText: .init(text: "TPE",
+                                          abbreviation: nil,
+                                          abbreviationPriority: nil)),
+        ]
+        
+        window.addSubview(instructionsBannerView)
+        CustomDayStyle().apply()
+        
+        let visualInstructionBanner = makeVisualInstruction(.takeOffRamp,
+                                                            .right,
+                                                            primaryInstruction: primaryInstruction,
+                                                            secondaryInstruction: secondaryInstruction)
+        
+        instructionsBannerView.update(for: visualInstructionBanner)
+        
+        assertImageSnapshot(matching: instructionsBannerView,
+                            as: .image(precision: 0.95))
     }
 }
 

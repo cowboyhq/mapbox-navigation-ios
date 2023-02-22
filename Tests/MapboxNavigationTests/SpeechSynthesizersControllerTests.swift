@@ -1,9 +1,11 @@
-
 import XCTest
 import MapboxDirections
-import MapboxCoreNavigation
+@testable import MapboxCoreNavigation
 import TestHelper
+import CoreLocation
 @testable import MapboxNavigation
+import class MapboxSpeech.SpeechSynthesizer
+import class MapboxSpeech.SpeechOptions
 
 class FailingSpeechSynthesizerMock: SpeechSynthesizerStub {
     var failing = false
@@ -25,6 +27,14 @@ class FailingSpeechSynthesizerMock: SpeechSynthesizerStub {
 
 class MapboxSpeechSynthMock: MapboxSpeechSynthesizer {
     var speakExpectation: XCTestExpectation?
+
+    init() {
+        super.init(accessToken: .mockedAccessToken, host: nil)
+    }
+    
+    override init(remoteSpeechSynthesizer: SpeechSynthesizer) {
+        super.init(remoteSpeechSynthesizer: remoteSpeechSynthesizer)
+    }
     
     override func speak(_ instruction: SpokenInstruction, during legProgress: RouteLegProgress, locale: Locale?) {
         super.speak(instruction, during: legProgress,locale: locale)
@@ -43,20 +53,30 @@ class SystemSpeechSynthMock: SystemSpeechSynthesizer {
     }
 }
 
-class SpeechSynthesizersControllerTests: XCTestCase {
+class SpeechSythesizerMock: SpeechSynthesizer {
+    var dataExpectation: XCTestExpectation?
+    
+    override func audioData(with options: SpeechOptions, completionHandler: @escaping SpeechSynthesizer.CompletionHandler) -> URLSessionDataTask {
+        dataExpectation?.fulfill()
+        return super.audioData(with: options, completionHandler: completionHandler)
+    }
+}
+
+class SpeechSynthesizersControllerTests: TestCase {
     
     var delegateErrorBlock: ((SpeechError) -> ())?
     var synthesizers: [SpeechSynthesizing] = []
-    let route: Route = {
+    let routeResponse: RouteResponse = {
         var options = NavigationRouteOptions(coordinates: [
             CLLocationCoordinate2D(latitude: 40.311012, longitude: -112.47926),
             CLLocationCoordinate2D(latitude: 29.99908, longitude: -102.828197),
         ])
         options.shapeFormat = .polyline
-        return Fixture.route(from: "route-with-instructions", options: options)
-    } ()
+        return Fixture.routeResponse(from: "route-with-instructions", options: options)
+    }()
     
     override func setUp() {
+        super.setUp()
         synthesizers = [
             FailingSpeechSynthesizerMock(),
             FailingSpeechSynthesizerMock()
@@ -64,6 +84,7 @@ class SpeechSynthesizersControllerTests: XCTestCase {
     }
 
     override func tearDown() {
+        super.tearDown()
         synthesizers = []
         delegateErrorBlock = nil
     }
@@ -109,11 +130,16 @@ class SpeechSynthesizersControllerTests: XCTestCase {
         deinitExpectation.expectedFulfillmentCount = 2
         (synthesizers[0] as! FailingSpeechSynthesizerMock).deinitExpectation = deinitExpectation
         (synthesizers[1] as! FailingSpeechSynthesizerMock).deinitExpectation = deinitExpectation
-        let dummyService = MapboxNavigationService(route: route, routeIndex: 0, routeOptions: routeOptions)
+        let dummyService = MapboxNavigationService(routeResponse: routeResponse,
+                                                   routeIndex: 0,
+                                                   routeOptions: routeOptions,
+                                                   customRoutingProvider: nil,
+                                                   credentials: Fixture.credentials)
         
         var routeController: RouteVoiceController? = RouteVoiceController(navigationService: dummyService,
                                                                           speechSynthesizer: MultiplexedSpeechSynthesizer(synthesizers))
-        
+        XCTAssertNotNil(routeController)
+
         synthesizers = []
         routeController = nil
         
@@ -124,10 +150,15 @@ class SpeechSynthesizersControllerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Synthesizers speak should be called")
         let sut = SystemSpeechSynthMock()
         sut.speakExpectation = expectation
-        let dummyService = MapboxNavigationService(route: route, routeIndex: 0, routeOptions: routeOptions, simulating: .always)
-        var routeController: RouteVoiceController? = RouteVoiceController(navigationService: dummyService,
+        let dummyService = MapboxNavigationService(routeResponse: routeResponse,
+                                                   routeIndex: 0,
+                                                   routeOptions: routeOptions,
+                                                   customRoutingProvider: MapboxRoutingProvider(.offline),
+                                                   credentials: Fixture.credentials,
+                                                   simulating: .always)
+        let routeController: RouteVoiceController? = RouteVoiceController(navigationService: dummyService,
                                                                           speechSynthesizer: sut)
-        
+        XCTAssertNotNil(routeController)
         dummyService.start()
         
         wait(for: [expectation], timeout: 8)
@@ -138,10 +169,16 @@ class SpeechSynthesizersControllerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Synthesizers speak should be called")
         let sut = MapboxSpeechSynthMock()
         sut.speakExpectation = expectation
-        let dummyService = MapboxNavigationService(route: route, routeIndex: 0, routeOptions: routeOptions, simulating: .always)
-        var routeController: RouteVoiceController? = RouteVoiceController(navigationService: dummyService,
+        let dummyService = MapboxNavigationService(routeResponse: routeResponse,
+                                                   routeIndex: 0,
+                                                   routeOptions: routeOptions,
+                                                   customRoutingProvider: MapboxRoutingProvider(.offline),
+                                                   credentials: Fixture.credentials,
+                                                   simulating: .always)
+        let routeController: RouteVoiceController? = RouteVoiceController(navigationService: dummyService,
                                                                           speechSynthesizer: sut)
-        
+        XCTAssertNotNil(routeController)
+
         dummyService.start()
         
         wait(for: [expectation], timeout: 8)
@@ -193,8 +230,23 @@ class SpeechSynthesizersControllerTests: XCTestCase {
         wait(for: [expectation], timeout: 2)
     }
     
+    func testCustomSynthesizerOnMapboxSynth() {
+        let expectation = XCTestExpectation(description: "Custom SpeechSynthesizer should be called")
+        let sut = SpeechSythesizerMock(accessToken: .mockedAccessToken)
+        sut.dataExpectation = expectation
+        let synth = MapboxSpeechSynthMock(remoteSpeechSynthesizer: sut)
+        
+        synth.speak(SpokenInstruction(distanceAlongStep: .init(),
+                                      text: "text",
+                                      ssmlText: "text"),
+                    during: Fixture.routeLegProgress(),
+                    locale: nil)
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
     func testMultiplexedParameters() {
-        let controller = MultiplexedSpeechSynthesizer()
+        let controller = MultiplexedSpeechSynthesizer(nil, accessToken: .mockedAccessToken, host: nil)
         
         let testLocale = Locale(identifier: "zu")
         

@@ -1,34 +1,43 @@
 import XCTest
 import MapboxDirections
+import CoreLocation
 @testable import TestHelper
 @testable import MapboxCoreNavigation
 @testable import MapboxNavigation
 
-class StepsViewControllerTests: XCTestCase {
+class StepsViewControllerTests: TestCase {
     struct Constants {
         static let route = response.routes!.first!
         static let options = routeOptions
         static let credentials = Fixture.credentials
     }
     
-    lazy var dependencies: (stepsViewController: StepsViewController, routeController: RouteController, firstLocation: CLLocation, lastLocation: CLLocation) = {
-        let bogusToken = "pk.feedCafeDeadBeefBadeBede"
-        let directions = Directions(credentials: Fixture.credentials)
-        let dataSource = RouteControllerDataSourceFake()
-        
-        let routeController = RouteController(along: Constants.route, routeIndex: 0, options: Constants.options, directions: directions, dataSource: dataSource)
-        
-        let stepsViewController = StepsViewController(routeProgress: routeController.routeProgress)
-        
-        let firstCoord = routeController.routeProgress.nearbyShape.coordinates.first!
-        let firstLocation = CLLocation(coordinate: firstCoord, altitude: 5, horizontalAccuracy: 10, verticalAccuracy: 5, course: 20, speed: 4, timestamp: Date())
-        
-        let lastCoord = routeController.routeProgress.currentLegProgress.remainingSteps.last!.shape!.coordinates.first!
-        let lastLocation = CLLocation(coordinate: lastCoord, altitude: 5, horizontalAccuracy: 10, verticalAccuracy: 5, course: 20, speed: 4, timestamp: Date())
-        
-        return (stepsViewController: stepsViewController, routeController: routeController, firstLocation: firstLocation, lastLocation: lastLocation)
-    }()
-    
+    var dependencies: (stepsViewController: StepsViewController, routeController: RouteController, firstLocation: CLLocation, lastLocation: CLLocation)!
+
+    override func setUp() {
+        super.setUp()
+
+        dependencies = {
+            let dataSource = RouteControllerDataSourceFake()
+
+            let routeController = RouteController(alongRouteAtIndex: 0, in: response, options: Constants.options, customRoutingProvider: MapboxRoutingProvider(.offline), dataSource: dataSource)
+
+            let stepsViewController = StepsViewController(routeProgress: routeController.routeProgress)
+
+            let firstCoord = routeController.routeProgress.nearbyShape.coordinates.first!
+            let firstLocation = CLLocation(coordinate: firstCoord, altitude: 5, horizontalAccuracy: 10, verticalAccuracy: 5, course: 20, speed: 4, timestamp: Date())
+
+            let lastCoord = routeController.routeProgress.currentLegProgress.remainingSteps.last!.shape!.coordinates.first!
+            let lastLocation = CLLocation(coordinate: lastCoord, altitude: 5, horizontalAccuracy: 10, verticalAccuracy: 5, course: 20, speed: 4, timestamp: Date())
+
+            return (stepsViewController: stepsViewController, routeController: routeController, firstLocation: firstLocation, lastLocation: lastLocation)
+        }()
+    }
+
+    override func tearDown() {
+        super.tearDown()
+        dependencies = nil
+    }
     
     func testRebuildStepsInstructionsViewDataSource() {
         let stepsViewController = dependencies.stepsViewController

@@ -1,23 +1,18 @@
 import UIKit
 
 extension UIViewController {
-    func topMostViewController() -> UIViewController? {
-        return topViewController(controller: self)
-    }
     
-    func topViewController(controller: UIViewController? = nil) -> UIViewController? {
-        if let navigationController = controller as? UINavigationController {
-            return topViewController(controller: navigationController.visibleViewController)
+    func embed(_ viewController: UIViewController,
+               in view: UIView,
+               constrainedBy constraints: ((UIViewController, UIViewController) -> [NSLayoutConstraint])? = nil) {
+        viewController.view.frame = view.bounds
+        view.addSubview(viewController.view)
+        addChild(viewController)
+        
+        if let childConstraints = constraints?(self, viewController) {
+            self.view.addConstraints(childConstraints)
         }
-        if let tabController = controller as? UITabBarController {
-            if let selected = tabController.selectedViewController {
-                return topViewController(controller: selected)
-            }
-        }
-        if let presented = controller?.presentedViewController {
-            return topViewController(controller: presented)
-        }
-        return controller
+        
+        viewController.didMove(toParent: self)
     }
 }
-

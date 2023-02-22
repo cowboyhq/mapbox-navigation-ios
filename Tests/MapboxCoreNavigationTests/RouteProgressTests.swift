@@ -2,22 +2,35 @@ import Foundation
 import XCTest
 import CoreLocation
 import MapboxDirections
+import TestHelper
 import struct Polyline.Polyline
 import Turf
 @testable import MapboxCoreNavigation
 
-class RouteProgressTests: XCTestCase {
-    #if !SWIFT_PACKAGE
+class RouteProgressTests: TestCase {
+
     func testRouteProgress() {
-        let routeProgress = RouteProgress(route: route, routeIndex: 0, options: routeOptions)
+        let routeProgress = RouteProgress(route: route, options: routeOptions)
         XCTAssertEqual(routeProgress.fractionTraveled, 0)
         XCTAssertEqual(routeProgress.distanceRemaining, 4054.2)
         XCTAssertEqual(routeProgress.distanceTraveled, 0)
         XCTAssertEqual(round(routeProgress.durationRemaining), 858)
     }
-    
+
+    func testRouteWithNoDistance() {
+        let routeProgress = RouteProgress(route: routeWithNoDistance, options: routeOptions)
+        XCTAssertEqual(routeProgress.distanceRemaining, 0)
+        XCTAssertEqual(routeProgress.distanceTraveled, 0)
+        XCTAssertEqual(round(routeProgress.durationRemaining), 0)
+        XCTAssertEqual(routeProgress.fractionTraveled, 1)
+        XCTAssertEqual(routeProgress.currentLegProgress.distanceRemaining, 0)
+        XCTAssertEqual(routeProgress.currentLegProgress.distanceTraveled, 0)
+        XCTAssertEqual(routeProgress.currentLegProgress.durationRemaining, 0)
+        XCTAssertEqual(routeProgress.currentLegProgress.fractionTraveled, 1)
+    }
+
     func testRouteLegProgress() {
-        let routeProgress = RouteProgress(route: route, routeIndex: 0, options: routeOptions)
+        let routeProgress = RouteProgress(route: route, options: routeOptions)
         XCTAssertEqual(routeProgress.currentLeg.description, "Hyde Street, Page Street")
         XCTAssertEqual(routeProgress.currentLegProgress.distanceTraveled, 0)
         XCTAssertEqual(round(routeProgress.currentLegProgress.durationRemaining), 858)
@@ -28,7 +41,7 @@ class RouteProgressTests: XCTestCase {
     }
     
     func testRouteStepProgress() {
-        let routeProgress = RouteProgress(route: route, routeIndex: 0, options: routeOptions)
+        let routeProgress = RouteProgress(route: route, options: routeOptions)
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.distanceRemaining, 384.1)
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.distanceTraveled, 0)
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.durationRemaining, 86.6, accuracy: 0.001)
@@ -38,7 +51,7 @@ class RouteProgressTests: XCTestCase {
     }
     
     func testNextRouteStepProgress() {
-        let routeProgress = RouteProgress(route: route, routeIndex: 0, options: routeOptions)
+        let routeProgress = RouteProgress(route: route, options: routeOptions)
         routeProgress.currentLegProgress.stepIndex = 1
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.spokenInstructionIndex, 0)
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.distanceRemaining, 439.1)
@@ -48,7 +61,6 @@ class RouteProgressTests: XCTestCase {
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.userDistanceToManeuverLocation, 439.1)
         XCTAssertEqual(routeProgress.currentLegProgress.currentStepProgress.step.description, "Turn right onto California Street")
     }
-    #endif
     
     func testRemainingWaypointsAlongRoute() {
         let coordinates = [
@@ -276,9 +288,8 @@ class RouteProgressTests: XCTestCase {
         XCTAssertTrue(legProgress.currentSpeedLimit?.value.isInfinite ?? false)
     }
     
-    #if !SWIFT_PACKAGE
     func testRouteProggressCodable() {
-        let routeProgress = RouteProgress(route: route, routeIndex: 0, options: routeOptions)
+        let routeProgress = RouteProgress(route: route, options: routeOptions)
         
         let encoder = JSONEncoder()
         encoder.userInfo[.options] = routeOptions
@@ -287,12 +298,10 @@ class RouteProgressTests: XCTestCase {
         decoder.userInfo[.options] = routeOptions
         let decoded = try! decoder.decode(RouteProgress.self, from: data)
 
-        XCTAssertEqual(routeProgress.indexedRoute.0.distance, decoded.indexedRoute.0.distance)
-        XCTAssertEqual(routeProgress.indexedRoute.0.speechLocale, decoded.indexedRoute.0.speechLocale)
-        XCTAssertEqual(routeProgress.indexedRoute.0.shape, decoded.indexedRoute.0.shape)
-        XCTAssertEqual(routeProgress.indexedRoute.0.expectedTravelTime, decoded.indexedRoute.0.expectedTravelTime)
-        XCTAssertEqual(routeProgress.indexedRoute.0.routeIdentifier, decoded.indexedRoute.0.routeIdentifier)
-        XCTAssertEqual(routeProgress.indexedRoute.1, decoded.indexedRoute.1)
+        XCTAssertEqual(routeProgress.route.distance, decoded.route.distance)
+        XCTAssertEqual(routeProgress.route.speechLocale, decoded.route.speechLocale)
+        XCTAssertEqual(routeProgress.route.shape, decoded.route.shape)
+        XCTAssertEqual(routeProgress.route.expectedTravelTime, decoded.route.expectedTravelTime)
         XCTAssertEqual(routeProgress.routeOptions, decoded.routeOptions)
         XCTAssertEqual(routeProgress.legIndex, decoded.legIndex)
         XCTAssertEqual(routeProgress.currentLegProgress.leg.source, decoded.currentLegProgress.leg.source)
@@ -303,7 +312,6 @@ class RouteProgressTests: XCTestCase {
         XCTAssertEqual(routeProgress.congestionTravelTimesSegmentsByStep.count, decoded.congestionTravelTimesSegmentsByStep.count)
         XCTAssertEqual(routeProgress.congestionTimesPerStep, decoded.congestionTimesPerStep)
     }
-    #endif
     
     func testRouteLegProgressCodable() {
         let coordinates = [

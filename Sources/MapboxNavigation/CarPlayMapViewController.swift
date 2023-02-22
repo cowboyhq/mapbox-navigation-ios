@@ -1,14 +1,56 @@
 import Foundation
+@_spi(Restricted) import MapboxMaps
+import MapboxCoreNavigation
+import MapboxDirections
+
+#if canImport(CarPlay)
 import CarPlay
 
 /**
  `CarPlayMapViewController` is responsible for administering the Mapbox map, the interface styles and the map template buttons to display on CarPlay.
  */
 @available(iOS 12.0, *)
-public class CarPlayMapViewController: UIViewController {
-    static let defaultAltitude: CLLocationDistance = 850
+open class CarPlayMapViewController: UIViewController {
     
-    var styleManager: StyleManager?
+    // MARK: UI Elements Configuration
+    
+    /**
+     The view controller’s delegate, that is used by the `CarPlayManager`.
+     
+     Do not overwrite this property and use `CarPlayManagerDelegate` methods directly.
+     */
+    public weak var delegate: CarPlayMapViewControllerDelegate?
+    
+    /**
+     Controls the styling of CarPlayMapViewController and its components.
+
+     The style can be modified programmatically by using `StyleManager.applyStyle(type:)`.
+     */
+    public private(set) var styleManager: StyleManager?
+    
+    /**
+     A very coarse location manager used for distinguishing between daytime and nighttime.
+     */
+    fileprivate let coarseLocationManager: CLLocationManager = {
+        let coarseLocationManager = CLLocationManager()
+        coarseLocationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+        return coarseLocationManager
+    }()
+    
+    /**
+     A view that displays the current speed limit.
+     */
+    public var speedLimitView: SpeedLimitView!
+    
+    /**
+     A view that displays the current road name.
+     */
+    public var wayNameView: WayNameView!
+    
+    /**
+     Session configuration that is used to track `CPContentStyle` related changes.
+     */
+    var sessionConfiguration: CPSessionConfiguration!
     
     /**
      The interface styles available to `styleManager` for display.
@@ -19,36 +61,26 @@ public class CarPlayMapViewController: UIViewController {
         }
     }
     
-    /// A very coarse location manager used for distinguishing between daytime and nighttime.
-    fileprivate let coarseLocationManager: CLLocationManager = {
-        let coarseLocationManager = CLLocationManager()
-        coarseLocationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
-        return coarseLocationManager
-    }()
-    
-    var isOverviewingRoutes: Bool = false {
-        didSet {
-            // Fix content insets in overview mode.
-            automaticallyAdjustsScrollViewInsets = !isOverviewingRoutes
-        }
-    }
-    
-    var mapView: NavigationMapView {
+    var navigationMapView: NavigationMapView {
         get {
             return self.view as! NavigationMapView
         }
     }
+    
+    // MARK: Bar Buttons Configuration
     
     /**
      The map button for recentering the map view if a user action causes it to stop following the user.
      */
     public lazy var recenterButton: CPMapButton = {
         let recenter = CPMapButton { [weak self] button in
-            self?.mapView.setUserTrackingMode(.followWithCourse, animated: true, completionHandler: nil)
+            self?.navigationMapView.navigationCamera.follow()
             button.isHidden = true
         }
+        
         let bundle = Bundle.mapboxNavigation
         recenter.image = UIImage(named: "carplay_locate", in: bundle, compatibleWith: traitCollection)
+        
         return recenter
     }()
     
@@ -57,11 +89,19 @@ public class CarPlayMapViewController: UIViewController {
      */
     public lazy var zoomInButton: CPMapButton = {
         let zoomInButton = CPMapButton { [weak self] (button) in
-            let zoomLevel = self?.mapView.zoomLevel ?? 0
-            self?.mapView.setZoomLevel(zoomLevel + 1, animated: true)
+            guard let self = self,
+                  let mapView = self.navigationMapView.mapView else { return }
+            
+            self.navigationMapView.navigationCamera.stop()
+            
+            var cameraOptions = CameraOptions(cameraState: mapView.cameraState)
+            cameraOptions.zoom = mapView.cameraState.zoom + 1.0
+            mapView.mapboxMap.setCamera(to: cameraOptions)
         }
+        
         let bundle = Bundle.mapboxNavigation
         zoomInButton.image = UIImage(named: "carplay_plus", in: bundle, compatibleWith: traitCollection)
+        
         return zoomInButton
     }()
     
@@ -70,86 +110,37 @@ public class CarPlayMapViewController: UIViewController {
      */
     public lazy var zoomOutButton: CPMapButton = {
         let zoomOutButton = CPMapButton { [weak self] button in
-            guard let self = self else { return }
-            self.mapView.setZoomLevel(self.mapView.zoomLevel - 1, animated: true)
+            guard let self = self,
+                  let mapView = self.navigationMapView.mapView else { return }
+            
+            self.navigationMapView.navigationCamera.stop()
+            
+            var cameraOptions = CameraOptions(cameraState: mapView.cameraState)
+            cameraOptions.zoom = mapView.cameraState.zoom - 1.0
+            mapView.mapboxMap.setCamera(to: cameraOptions)
         }
+        
         let bundle = Bundle.mapboxNavigation
         zoomOutButton.image = UIImage(named: "carplay_minus", in: bundle, compatibleWith: traitCollection)
+        
         return zoomOutButton
     }()
     
     /**
      The map button property for hiding or showing the pan map button.
      */
-    internal(set) public var panMapButton: CPMapButton?
+    public internal(set) var panMapButton: CPMapButton?
     
     /**
      The map button property for exiting the pan map mode.
      */
-    internal(set) public var dismissPanningButton: CPMapButton?
-    
-    var styleObservation: NSKeyValueObservation?
-    
-    /**
-     Initializes a new CarPlay map view controller.
-     
-     - parameter styles: The interface styles initially available to the style manager for display.
-     */
-    required init(styles: [Style]) {
-        self.styles = styles
-        
-        super.init(nibName: nil, bundle: nil)
-    }
-    
-    required init?(coder aDecoder: NSCoder) {
-        guard let styles = aDecoder.decodeObject(of: [NSArray.self, Style.self], forKey: "styles") as? [Style] else {
-            return nil
-        }
-        self.styles = styles
-        
-        super.init(coder: aDecoder)
-    }
-    
-    override public func encode(with aCoder: NSCoder) {
-        super.encode(with: aCoder)
-        
-        aCoder.encode(styles, forKey: "styles")
-    }
-    
-    override public func loadView() {
-        let mapView = NavigationMapView()
-        mapView.logoView.isHidden = true
-        mapView.attributionButton.isHidden = true
-        
-        styleObservation = mapView.observe(\.style, options: .new) { (mapView, change) in
-            guard change.newValue != nil else {
-                return
-            }
-            mapView.localizeLabels()
-        }
-        
-        self.view = mapView
-    }
-
-    override public func viewDidLoad() {
-        super.viewDidLoad()
-        
-        styleManager = StyleManager()
-        styleManager!.delegate = self
-        styleManager!.styles = styles
-        
-        resetCamera(animated: false, altitude: CarPlayMapViewController.defaultAltitude)
-    }
-    
-    override public func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        styleObservation = nil
-    }
+    public internal(set) var dismissPanningButton: CPMapButton?
     
     /**
      Creates a new pan map button for the CarPlay map view controller.
      
      - parameter mapTemplate: The map template available to the pan map button for display.
+     - returns: `CPMapButton` instance.
      */
     @discardableResult public func panningInterfaceDisplayButton(for mapTemplate: CPMapTemplate) -> CPMapButton {
         let panButton = CPMapButton { [weak mapTemplate] _ in
@@ -169,10 +160,13 @@ public class CarPlayMapViewController: UIViewController {
      Creates a new close button to dismiss the visible panning buttons on the map.
      
      - parameter mapTemplate: The map template available to the pan map button for display.
+     - returns: `CPMapButton` instance.
      */
     @discardableResult public func panningInterfaceDismissalButton(for mapTemplate: CPMapTemplate) -> CPMapButton {
         let defaultButtons = mapTemplate.mapButtons
-        let closeButton = CPMapButton { _ in
+        let closeButton = CPMapButton { [weak mapTemplate] _ in
+            guard let mapTemplate = mapTemplate else { return }
+            
             mapTemplate.mapButtons = defaultButtons
             mapTemplate.dismissPanningInterface(animated: true)
         }
@@ -183,49 +177,284 @@ public class CarPlayMapViewController: UIViewController {
         return closeButton
     }
     
-    func resetCamera(animated: Bool = false, altitude: CLLocationDistance? = nil) {
-        let camera = mapView.camera
-        if let altitude = altitude {
-            camera.altitude = altitude
-        }
-        camera.pitch = 60
-        mapView.setCamera(camera, animated: animated)
+    private var safeTrailingSpeedLimitViewConstraint: NSLayoutConstraint!
+    private var trailingSpeedLimitViewConstraint: NSLayoutConstraint!
+    
+    // MARK: Initialization Methods
+    
+    /**
+     Initializes a new CarPlay map view controller.
+     
+     - parameter styles: The interface styles initially available to the style manager for display.
+     */
+    public required init(styles: [Style]) {
+        self.styles = styles
+        
+        super.init(nibName: nil, bundle: nil)
+        
+        sessionConfiguration = CPSessionConfiguration(delegate: self)
     }
     
-    override public func viewSafeAreaInsetsDidChange() {
+    /**
+     Returns a `CarPlayMapViewController` object initialized from data in a given unarchiver.
+     
+     - parameter coder: An unarchiver object.
+     */
+    public required init?(coder decoder: NSCoder) {
+        guard let styles = decoder.decodeObject(of: [NSArray.self, Style.self], forKey: "styles") as? [Style] else {
+            return nil
+        }
+        self.styles = styles
+        
+        super.init(coder: decoder)
+    }
+    
+    public override func encode(with aCoder: NSCoder) {
+        super.encode(with: aCoder)
+        
+        aCoder.encode(styles, forKey: "styles")
+    }
+    
+    deinit {
+        unsubscribeFromFreeDriveNotifications()
+    }
+    
+    func setupNavigationMapView() {
+        let navigationMapView = NavigationMapView(frame: UIScreen.main.bounds, navigationCameraType: .carPlay)
+        navigationMapView.delegate = self
+        navigationMapView.mapView.mapboxMap.onEvery(event: .styleLoaded) { [weak navigationMapView] _ in
+            navigationMapView?.localizeLabels()
+        }
+        
+        navigationMapView.userLocationStyle = .puck2D()
+        
+        navigationMapView.mapView.ornaments.options.logo.visibility = .hidden
+        navigationMapView.mapView.ornaments.options.attributionButton.visibility = .hidden
+        navigationMapView.mapView.ornaments.options.compass.visibility = .hidden
+        
+        self.view = navigationMapView
+    }
+    
+    func setupStyleManager() {
+        styleManager = StyleManager(traitCollection: UITraitCollection(userInterfaceIdiom: .carPlay))
+        styleManager?.delegate = self
+        styleManager?.styles = styles
+    }
+    
+    func setupSpeedLimitView() {
+        let speedLimitView = SpeedLimitView()
+        speedLimitView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(speedLimitView)
+        
+        speedLimitView.topAnchor.constraint(equalTo: view.safeTopAnchor, constant: 8).isActive = true
+        safeTrailingSpeedLimitViewConstraint = speedLimitView.trailingAnchor.constraint(equalTo: view.safeTrailingAnchor,
+                                                                                        constant: -8)
+        trailingSpeedLimitViewConstraint = speedLimitView.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+                                                                                    constant: -8)
+        speedLimitView.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        speedLimitView.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+        self.speedLimitView = speedLimitView
+    }
+    
+    func setupWayNameView() {
+        let wayNameView: WayNameView = .forAutoLayout()
+        wayNameView.containerView.isHidden = true
+        wayNameView.containerView.clipsToBounds = true
+        wayNameView.label.textAlignment = .center
+        view.addSubview(wayNameView)
+        
+        NSLayoutConstraint.activate([
+            wayNameView.bottomAnchor.constraint(equalTo: view.safeBottomAnchor, constant: -8),
+            wayNameView.centerXAnchor.constraint(equalTo: view.safeCenterXAnchor),
+            wayNameView.widthAnchor.constraint(lessThanOrEqualTo: view.safeWidthAnchor, multiplier: 0.95),
+            wayNameView.heightAnchor.constraint(equalToConstant: 30.0)
+        ])
+        
+        self.wayNameView = wayNameView
+    }
+    
+    func setupPassiveLocationProvider() {
+        let passiveLocationManager = PassiveLocationManager()
+        let passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
+        navigationMapView.mapView.location.overrideLocationProvider(with: passiveLocationProvider)
+        
+        subscribeForFreeDriveNotifications()
+    }
+    
+    // MARK: Notifications Observer Methods
+    
+    func subscribeForFreeDriveNotifications() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(didUpdatePassiveLocation),
+                                               name: .passiveLocationManagerDidUpdate,
+                                               object: nil)
+    }
+    
+    func unsubscribeFromFreeDriveNotifications() {
+        NotificationCenter.default.removeObserver(self,
+                                                  name: .passiveLocationManagerDidUpdate,
+                                                  object: nil)
+    }
+    
+    @objc func didUpdatePassiveLocation(_ notification: Notification) {
+        speedLimitView.signStandard = notification.userInfo?[PassiveLocationManager.NotificationUserInfoKey.signStandardKey] as? SignStandard
+        speedLimitView.speedLimit = notification.userInfo?[PassiveLocationManager.NotificationUserInfoKey.speedLimitKey] as? Measurement<UnitSpeed>
+        
+        let roadNameFromStatus = notification.userInfo?[PassiveLocationManager.NotificationUserInfoKey.roadNameKey] as? String
+        if let roadName = roadNameFromStatus?.nonEmptyString {
+            let representation = notification.userInfo?[PassiveLocationManager.NotificationUserInfoKey.routeShieldRepresentationKey] as? VisualInstruction.Component.ImageRepresentation
+            wayNameView.label.updateRoad(roadName: roadName, representation: representation)
+            wayNameView.containerView.isHidden = false
+        } else {
+            wayNameView.text = nil
+            wayNameView.containerView.isHidden = true
+        }
+        
+        if let location = notification.userInfo?[PassiveLocationManager.NotificationUserInfoKey.locationKey] as? CLLocation {
+            speedLimitView.currentSpeed = location.speed
+            // Update user puck to the most recent location.
+            navigationMapView.moveUserLocation(to: location, animated: true)
+        }
+    }
+    
+    // MARK: UIViewController Lifecycle Methods
+    
+    public override func loadView() {
+        setupNavigationMapView()
+        setupPassiveLocationProvider()
+    }
+    
+    public override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        setupStyleManager()
+        setupSpeedLimitView()
+        setupWayNameView()
+        navigationMapView.navigationCamera.follow()
+    }
+    
+    open override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if #available(iOS 13.0, *) {
+            applyStyleIfNeeded(sessionConfiguration.contentStyle)
+        }
+    }
+    
+    @available(iOS 13.0, *)
+    func applyStyleIfNeeded(_ contentStyle: CPContentStyle) {
+        if contentStyle.contains(.dark) {
+            styleManager?.applyStyle(type: .night)
+        } else if contentStyle.contains(.light) {
+            styleManager?.applyStyle(type: .day)
+        }
+    }
+    
+    public override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
-        guard let active = mapView.routes?.first else {
-            mapView.setUserTrackingMode(.followWithCourse, animated: true, completionHandler: nil)
+        
+        // Trigger update of view constraints to correctly position views like `SpeedLimitView`.
+        view.setNeedsUpdateConstraints()
+        
+        guard let activeRoute = navigationMapView.routes?.first else {
+            navigationMapView.navigationCamera.follow()
             return
         }
         
-        if isOverviewingRoutes {
-            //FIXME: Unable to tilt map during route selection -- https://github.com/mapbox/mapbox-gl-native/issues/2259
-            let topDownCamera = mapView.camera
-            topDownCamera.pitch = 0
-            mapView.setCamera(topDownCamera, animated: false)
+        if navigationMapView.navigationCamera.state == .idle {
+            var cameraOptions = CameraOptions(cameraState: navigationMapView.mapView.cameraState)
+            cameraOptions.pitch = 0
+            navigationMapView.mapView.mapboxMap.setCamera(to: cameraOptions)
             
-            mapView.fit(to: active, animated: false)
+            navigationMapView.fitCamera(to: [activeRoute])
         }
+    }
+    
+    public override func updateViewConstraints() {
+        if view.safeAreaInsets.right > 38.0 {
+            safeTrailingSpeedLimitViewConstraint.isActive = true
+            trailingSpeedLimitViewConstraint.isActive = false
+        } else {
+            safeTrailingSpeedLimitViewConstraint.isActive = false
+            trailingSpeedLimitViewConstraint.isActive = true
+        }
+        
+        super.updateViewConstraints()
     }
 }
 
+// MARK: StyleManagerDelegate Methods
+
 @available(iOS 12.0, *)
 extension CarPlayMapViewController: StyleManagerDelegate {
+    
     public func location(for styleManager: StyleManager) -> CLLocation? {
-        return mapView.userLocationForCourseTracking ?? mapView.userLocation?.location ?? coarseLocationManager.location
+        var latestLocation: CLLocation? = nil
+        if let coordinate = navigationMapView.mapView.location.latestLocation?.coordinate {
+            latestLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        }
+        
+        return navigationMapView.mostRecentUserCourseViewLocation ??
+            latestLocation ??
+            coarseLocationManager.location
     }
     
     public func styleManager(_ styleManager: StyleManager, didApply style: Style) {
-        let styleURL = style.previewMapStyleURL
-        if mapView.styleURL != styleURL {
-            mapView.style?.transition = MGLTransition(duration: 0.5, delay: 0)
-            mapView.styleURL = styleURL
+        let mapboxMapStyle = navigationMapView.mapView.mapboxMap.style
+        if mapboxMapStyle.uri?.rawValue != style.mapStyleURL.absoluteString {
+            let styleURI = StyleURI(url: style.mapStyleURL)
+            mapboxMapStyle.uri = styleURI
+            // Update the sprite repository of wayNameView when map style changes.
+            wayNameView?.label.updateStyle(styleURI: styleURI)
         }
     }
     
     public func styleManagerDidRefreshAppearance(_ styleManager: StyleManager) {
-        mapView.reloadStyle(self)
+        guard let mapboxMap = navigationMapView.mapView.mapboxMap,
+              let styleURI = mapboxMap.style.uri else { return }
+        
+        mapboxMap.loadStyleURI(styleURI)
     }
 }
 
+// MARK: NavigationMapViewDelegate Methods
+
+@available(iOS 12.0, *)
+extension CarPlayMapViewController: NavigationMapViewDelegate {
+    
+    public func navigationMapView(_ navigationMapView: NavigationMapView,
+                                  didAdd finalDestinationAnnotation: PointAnnotation,
+                                  pointAnnotationManager: PointAnnotationManager) {
+        delegate?.carPlayMapViewController(self,
+                                           didAdd: finalDestinationAnnotation,
+                                           pointAnnotationManager: pointAnnotationManager)
+    }
+    
+    public func navigationMapView(_ navigationMapView: NavigationMapView,
+                                  routeLineLayerWithIdentifier identifier: String,
+                                  sourceIdentifier: String) -> LineLayer? {
+        delegate?.carPlayMapViewController(self,
+                                           routeLineLayerWithIdentifier: identifier,
+                                           sourceIdentifier: sourceIdentifier)
+    }
+    
+    public func navigationMapView(_ navigationMapView: NavigationMapView,
+                                  routeCasingLineLayerWithIdentifier identifier: String,
+                                  sourceIdentifier: String) -> LineLayer? {
+        delegate?.carPlayMapViewController(self,
+                                           routeCasingLineLayerWithIdentifier: identifier,
+                                           sourceIdentifier: sourceIdentifier)
+    }
+}
+
+@available(iOS 12.0, *)
+extension CarPlayMapViewController: CPSessionConfigurationDelegate {
+    
+    @available(iOS 13.0, *)
+    public func sessionConfiguration(_ sessionConfiguration: CPSessionConfiguration,
+                                     contentStyleChanged contentStyle: CPContentStyle) {
+        applyStyleIfNeeded(contentStyle)
+    }
+}
+#endif

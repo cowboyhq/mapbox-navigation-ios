@@ -1,12 +1,49 @@
 import CoreLocation
+import MapboxDirections
 
-struct RoundingTable {
-    struct Threshold {
-        let maximumDistance: Measurement<UnitLength>
-        let roundingIncrement: Double
-        let maximumFractionDigits: Int
+/**
+ :nodoc:
+ An object responsible for the rounding behavior of distances according to locale.
+ */
+public struct RoundingTable {
+    /**
+     :nodoc:
+     `Threshold` supplies rounding behavior for a given maximum distance.
+     */
+    public struct Threshold {
+        /**
+         :nodoc:
+         The maximum distance that the `Threshold` is applicable.
+         */
+        public let maximumDistance: Measurement<UnitLength>
         
-        func measurement(of distance: CLLocationDistance) -> Measurement<UnitLength> {
+        /**
+         :nodoc:
+         The increment that a given distance with be rounded to.
+         */
+        public let roundingIncrement: Double
+        
+        /**
+         :nodoc:
+         The maximum number of digits following the decimal point.
+         */
+        public let maximumFractionDigits: Int
+        
+        /**
+         :nodoc:
+         Initializes a `Threshold` object with a given maximum distance, rounding increment, and maximum fraction of digits.
+         */
+        public init(maximumDistance: Measurement<UnitLength>, roundingIncrement: Double, maximumFractionDigits: Int) {
+            self.maximumDistance = maximumDistance
+            self.roundingIncrement = roundingIncrement
+            self.maximumFractionDigits = maximumFractionDigits
+        }
+        
+        /**
+         :nodoc:
+         Returns a rounded `Measurement<UnitLength>` for a given distance.
+         */
+        public func measurement(of distance: CLLocationDistance) -> Measurement<UnitLength> {
             var measurement = Measurement(value: distance, unit: .meters).converted(to: maximumDistance.unit)
             measurement.value.round(roundingIncrement: roundingIncrement)
             measurement.value.round(precision: pow(10, Double(maximumFractionDigits)))
@@ -14,18 +51,35 @@ struct RoundingTable {
         }
     }
     
-    let thresholds: [Threshold]
+    /**
+     :nodoc:
+     An array of `Threshold`s that detail the rounding behavior.
+     */
+    public let thresholds: [Threshold]
     
     /**
      Returns the most applicable threshold for the given distance, falling back to the last threshold.
      */
-    func threshold(for distance: CLLocationDistance) -> Threshold {
+    public func threshold(for distance: CLLocationDistance) -> Threshold {
         return thresholds.first {
             distance < $0.maximumDistance.distance
         } ?? thresholds.last!
     }
     
-    static var metric: RoundingTable = RoundingTable(thresholds: [
+    /**
+     :nodoc:
+     Initializes a `RoundingTable` with the given thresholds.
+     - parameter thresholds: An array of `Threshold`s that dictate rounding behavior.
+     */
+    public init(thresholds: [Threshold]) {
+        self.thresholds = thresholds
+    }
+
+    /**
+     :nodoc:
+     The rounding behavior for locales where the metric system is used.
+     */
+    public static var metric: RoundingTable = RoundingTable(thresholds: [
         .init(maximumDistance: Measurement(value: 25, unit: .meters), roundingIncrement: 5, maximumFractionDigits: 0),
         .init(maximumDistance: Measurement(value: 100, unit: .meters), roundingIncrement: 25, maximumFractionDigits: 0),
         .init(maximumDistance: Measurement(value: 999, unit: .meters), roundingIncrement: 50, maximumFractionDigits: 0),
@@ -34,7 +88,11 @@ struct RoundingTable {
         .init(maximumDistance: Measurement(value: 5, unit: .kilometers), roundingIncrement: 0.0001, maximumFractionDigits: 0)
     ])
     
-    static var uk: RoundingTable = RoundingTable(thresholds: [
+    /**
+     :nodoc:
+     The rounding behavior used by the UK.
+     */
+    public static var uk: RoundingTable = RoundingTable(thresholds: [
         .init(maximumDistance: Measurement(value: 20, unit: .yards), roundingIncrement: 10, maximumFractionDigits: 0),
         .init(maximumDistance: Measurement(value: 100, unit: .yards), roundingIncrement: 25, maximumFractionDigits: 0),
         .init(maximumDistance: Measurement(value: 0.1, unit: .miles).converted(to: .yards), roundingIncrement: 50, maximumFractionDigits: 1),
@@ -42,7 +100,11 @@ struct RoundingTable {
         .init(maximumDistance: Measurement(value: 5, unit: .miles), roundingIncrement: 0.0001, maximumFractionDigits: 0)
     ])
     
-    static var us: RoundingTable = RoundingTable(thresholds: [
+    /**
+     :nodoc:
+     The rounding behavior for locales where the imperial system is used.
+     */
+    public static var us: RoundingTable = RoundingTable(thresholds: [
         .init(maximumDistance: Measurement(value: 0.1, unit: .miles).converted(to: .feet), roundingIncrement: 50, maximumFractionDigits: 0),
         .init(maximumDistance: Measurement(value: 3, unit: .miles), roundingIncrement: 0.1, maximumFractionDigits: 1),
         .init(maximumDistance: Measurement(value: 5, unit: .miles), roundingIncrement: 0.0001, maximumFractionDigits: 0)
@@ -73,7 +135,7 @@ extension Measurement where UnitType == UnitLength {
      */
     public func localized(into locale: Locale = .nationalizedCurrent) -> Measurement<UnitLength> {
         let threshold: RoundingTable
-        if NavigationSettings.shared.usesMetric {
+        if MeasurementSystem(NavigationSettings.shared.distanceUnit) == .metric {
             threshold = .metric
         } else if locale.languageCode == "en" && locale.regionCode == "GB" {
             threshold = .uk
@@ -97,6 +159,9 @@ extension NSAttributedString.Key {
  This class is limited to `UnitLength` and its behavior is more specific to distances than `MeasurementFormatter`. By default, the class automatically localizes and rounds the measurement using `Measurement.localized(into:)` and `Locale.nationalizedCurrent`. Measurements can be formatted into either strings or attributed strings.
  */
 open class DistanceFormatter: Formatter, NSSecureCoding {
+    
+    // MARK: Configuring the Formatting
+    
     public static var supportsSecureCoding = true
     
     /**
@@ -155,6 +220,8 @@ open class DistanceFormatter: Formatter, NSSecureCoding {
     public required init?(coder decoder: NSCoder) {
         super.init(coder: decoder)
     }
+    
+    // MARK: Getting String Representation of Values
     
     /**
      Creates and returns a localized, formatted string representation of the given distance in meters.

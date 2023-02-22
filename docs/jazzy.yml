@@ -4,7 +4,7 @@ title: "Navigation SDK for iOS"
 author_url: https://docs.mapbox.com/ios/navigation/
 github_url: https://github.com/mapbox/mapbox-navigation-ios
 dash_url: https://docs.mapbox.com/ios/docsets/MapboxNavigation.xml
-copyright: '© 2014–2021 [Mapbox](https://www.mapbox.com/). See [license](https://github.com/mapbox/mapbox-navigation-ios/blob/main/LICENSE.md) for more details.'
+copyright: '© 2014–2022 [Mapbox](https://www.mapbox.com/). See [license](https://github.com/mapbox/mapbox-navigation-ios/blob/main/LICENSE.md) for more details.'
 
 head: |
   <link rel='shortcut icon' href='https://www.mapbox.com/img/favicon.ico' type='image/x-icon' />
@@ -48,7 +48,8 @@ custom_categories:
       - VisualInstruction
       - VisualInstructionDelegate
       - NavigationEventsManager
-      - EventsManagerDataSource
+      - ActiveNavigationEventsManagerDataSource
+      - PassiveNavigationEventsManagerDataSource
       - NavigationLocationManager
       - ReplayLocationManager
       - SimulatedLocationManager
@@ -56,26 +57,17 @@ custom_categories:
       - RouteOptions
       - NavigationMatchOptions
       - SimulationMode
-      - PassiveLocationDataSource
+      - PassiveLocationManager
+      - HistoryRecording
   - name: Maps
     children:
       - NavigationMapView
       - NavigationMapViewDelegate
-      - NavigationMapViewCourseTrackingDelegate
-      - MGLMapView
-      - MGLAccountManager
-      - MGLMultiPolygonFeature
-      - MGLMultiPolyline
-      - MGLMultiPolylineFeature
-      - MGLPointAnnotation
-      - MGLPointFeature
-      - MGLPolygon
-      - MGLPolygonFeature
-      - MGLPolyline
-      - MGLPolylineFeature
-      - MGLStyle
-      - PassiveLocationManager
+      - MapView
+      - PassiveLocationProvider
+      - NavigationLocationProvider
       - WaypointStyle
+      - UserLocationStyle
   - name: Styling
     children:
       - Style
@@ -102,7 +94,9 @@ custom_categories:
       - InstructionsCardViewController
       - InstructionsCardContainerView
       - InstructionsCardContainerViewDelegate
+      - InstructionsBannerView
       - InstructionsBannerViewDelegate
+      - BaseInstructionsBannerView
       - ManeuverView
       - JunctionView
       - GenericRouteShield
@@ -111,12 +105,16 @@ custom_categories:
       - CarPlayManager
       - CarPlayManagerDelegate
       - CarPlayNavigationViewController
-      - CarPlayNavigationDelegate
+      - CarPlayNavigationViewControllerDelegate
       - CarPlayActivity
       - CarPlayCompassView
       - CarPlayMapViewController
+      - CarPlayMapViewControllerDelegate
       - CarPlaySearchController
+      - CarPlaySearchControllerDelegate
       - CarPlayConnectionObserver
+      - RecentItem
+      - NavigationGeocodedPlacemark
   - name: Configuration
     children:
       - RouteControllerDeadReckoningTimeInterval
@@ -128,11 +126,12 @@ custom_categories:
       - RouteControllerMaximumDistanceBeforeRecalculating
       - RouteControllerUserLocationSnappingDistance
       - MapOrnamentPosition
-      - MBCongestionAttribute
-      - MBCurrentLegAttribute
-      - MBRouteLineWidthByZoomLevel
+      - CongestionAttribute
+      - CurrentLegAttribute
+      - RouteLineWidthByZoomLevel
       - NavigationMapViewMinimumDistanceForOverheadZooming
       - NavigationViewMinimumVolumeForWarning
+      - GradientCongestionFadingDistance
       - RouteControllerIncorrectCourseMultiplier
       - RouteControllerLinkedInstructionBufferMultiplier
       - RouteControllerMaximumSpeedForUsingCurrentStep
@@ -151,11 +150,37 @@ custom_categories:
       - FeedbackViewController
       - FeedbackViewControllerDelegate
       - FeedbackItem
-      - FeedbackType
-      - IncorrectVisualSubtype
+      - ActiveNavigationFeedbackType
+      - PassiveNavigationFeedbackType
+      - PassiveNavigationIncorrectVisualSubtype
       - ConfusingAudioSubtype
       - RouteQualitySubtype
       - IllegalRouteSubtype
       - RoadClosureSubtype
       - FeedbackSource
       - EndOfRouteFeedback
+  - name: Camera
+    children:
+      - NavigationCamera
+      - NavigationCameraType
+      - NavigationCameraState
+      - CameraStateTransition
+      - NavigationCameraStateTransition
+      - ViewportDataSource
+      - NavigationViewportDataSource
+      - ViewportDataSourceType
+      - ViewportDataSourceDelegate
+  - name: Electronic Horizon
+    children:
+      - ElectronicHorizonOptions
+      - RoadGraph
+      - OpenLRIdentifier
+      - OpenLROrientation
+      - RoadName
+      - RoadObject
+      - DistancedRoadObject
+      - RoadObjectMatcher
+      - RoadObjectStore
+      - RoadObjectMatcherDelegate
+      - RoadObjectStoreDelegate
+      - RoadObjectMatcherError

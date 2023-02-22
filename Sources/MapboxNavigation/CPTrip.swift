@@ -3,8 +3,21 @@ import CarPlay
 
 @available(iOS 12.0, *)
 extension CPTrip {
-    convenience init(routes: [Route], routeOptions: RouteOptions, waypoints: [Waypoint]) {
-        let routeChoices = routes.enumerated().map { (routeIndex, route) -> CPRouteChoice in
+    
+    convenience init(routeResponse: RouteResponse) {
+        var waypoints: [Waypoint]
+        var directionsOptions: DirectionsOptions
+        
+        switch routeResponse.options {
+        case .route(let routeOptions):
+            waypoints = routeOptions.waypoints
+            directionsOptions = routeOptions
+        case .match(let matchOptions):
+            waypoints = matchOptions.waypoints
+            directionsOptions = matchOptions
+        }
+        
+        let routeChoices = routeResponse.routes?.enumerated().map { (routeIndex, route) -> CPRouteChoice in
             let summaryVariants = [
                 DateComponentsFormatter.fullDateComponentsFormatter.string(from: route.expectedTravelTime)!,
                 DateComponentsFormatter.shortDateComponentsFormatter.string(from: route.expectedTravelTime)!,
@@ -13,18 +26,29 @@ extension CPTrip {
             let routeChoice = CPRouteChoice(summaryVariants: summaryVariants,
                                             additionalInformationVariants: [route.description],
                                             selectionSummaryVariants: [route.description])
-            let info: (Route, Int, RouteOptions) = (route: route, routeIndex: routeIndex, options: routeOptions)
-            routeChoice.userInfo = info
+            
+            let key: String = CPRouteChoice.RouteResponseUserInfo.key
+            let value: CPRouteChoice.RouteResponseUserInfo = .init(response: routeResponse,
+                                                                   routeIndex: routeIndex,
+                                                                   options: directionsOptions)
+            let userInfo: CarPlayUserInfo = [key: value]
+            routeChoice.userInfo = userInfo
             return routeChoice
-        }
+        } ?? []
         
-        let waypoints = routeOptions.waypoints
-        let origin = MKMapItem(placemark: MKPlacemark(coordinate: waypoints.first!.coordinate))
-        origin.name = waypoints.first?.name
-        let destination = MKMapItem(placemark: MKPlacemark(coordinate: waypoints.last!.coordinate))
-        destination.name = waypoints.last?.name
+        guard let originCoordinate = waypoints.first?.coordinate,
+              let destinationCoordinate = waypoints.last?.coordinate else {
+                  preconditionFailure("Origin and destination coordinates should be valid.")
+              }
         
-        self.init(origin: origin, destination: destination, routeChoices: routeChoices)
-        userInfo = routeOptions
+        let originMapItem = MKMapItem(placemark: MKPlacemark(coordinate: originCoordinate))
+        originMapItem.name = waypoints.first?.name
+        
+        let destinationMapItem = MKMapItem(placemark: MKPlacemark(coordinate: destinationCoordinate))
+        destinationMapItem.name = waypoints.last?.name
+        
+        self.init(origin: originMapItem,
+                  destination: destinationMapItem,
+                  routeChoices: routeChoices)
     }
 }

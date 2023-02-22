@@ -1,18 +1,17 @@
 import XCTest
 import Foundation
-import SnappyShrimp
 import MapboxDirections
+import SnapshotTesting
 @testable import TestHelper
 @testable import MapboxNavigation
 @testable import MapboxCoreNavigation
 
-class BottomBannerSnapshotTests: SnapshotTest {
+class BottomBannerSnapshotTests: TestCase {
     override func setUp() {
         super.setUp()
-        recordMode = false
+        isRecording = false
+        DayStyle().apply()
     }
-    
-    @available(iOS 11.0, *)
     
     func testBottomBannerViewController() {
         let host = UIViewController(nibName: nil, bundle: nil)
@@ -22,7 +21,7 @@ class BottomBannerSnapshotTests: SnapshotTest {
         host.view.addSubview(container)
         constrain(container, to: host.view, side: .bottom)
         
-        embed(parent: host, child: subject, in: container) { (parent, banner) -> [NSLayoutConstraint] in
+        host.embed(subject, in: container) { (parent, banner) -> [NSLayoutConstraint] in
             banner.view.translatesAutoresizingMaskIntoConstraints = false
             return banner.view.constraintsForPinning(to: container)
         }
@@ -30,10 +29,9 @@ class BottomBannerSnapshotTests: SnapshotTest {
         applyStyling(to: subject)
         subject.prepareForInterfaceBuilder()
 
-        verify(host, for: Device.iPhoneX.portrait)
+        assertImageSnapshot(matching: host, as: .image(precision: 0.95))
     }
     
-    @available(iOS 11.0, *)
     func testBottomBannerViewControllerNoSafeArea() {
         let host = UIViewController(nibName: nil, bundle: nil)
         let container = UIView.forAutoLayout()
@@ -42,7 +40,7 @@ class BottomBannerSnapshotTests: SnapshotTest {
         host.view.addSubview(container)
         constrain(container, to: host.view, side: .bottom)
         
-        embed(parent: host, child: subject, in: container) { (parent, banner) -> [NSLayoutConstraint] in
+        host.embed(subject, in: container) { (parent, banner) -> [NSLayoutConstraint] in
             banner.view.translatesAutoresizingMaskIntoConstraints = false
             return banner.view.constraintsForPinning(to: container)
         }
@@ -50,7 +48,7 @@ class BottomBannerSnapshotTests: SnapshotTest {
         applyStyling(to: subject)
         subject.prepareForInterfaceBuilder()
         
-        verify(host, for: Device.iPhone8.portrait)
+        assertImageSnapshot(matching: host, as: .image(precision: 0.95))
     }
     
     func applyStyling(to subject: BottomBannerViewController) {

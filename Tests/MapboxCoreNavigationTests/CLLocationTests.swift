@@ -1,9 +1,10 @@
 import XCTest
 import CoreLocation
+import TestHelper
 @testable import MapboxCoreNavigation
 @testable import MapboxNavigationNative
 
-class CLLocationTests: XCTestCase {
+class CLLocationTests: TestCase {
     func testFixLocationToCLLocation() {
         let coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 1)
         let timestamp = Date()
@@ -16,7 +17,7 @@ class CLLocationTests: XCTestCase {
         let bearingAccuracy: CLLocationAccuracy = 35
         
         let fixLocation = FixLocation(coordinate: coordinate,
-                                      monotonicTimestampNanoseconds: 0, // use time instead; see also `Navigator.status(at:)`
+                                      monotonicTimestampNanoseconds: Int64(timestamp.nanosecondsSince1970),
                                       time: timestamp,
                                       speed: speed as NSNumber,
                                       bearing: bearing as NSNumber,
@@ -25,14 +26,18 @@ class CLLocationTests: XCTestCase {
                                       provider: nil,
                                       bearingAccuracy: bearingAccuracy as NSNumber,
                                       speedAccuracy: speedAccuracy as NSNumber,
-                                      verticalAccuracy: verticalAccuracy as NSNumber)
+                                      verticalAccuracy: verticalAccuracy as NSNumber,
+                                      extras: [:],
+                                      isMock: true)
         
         let location = CLLocation(fixLocation)
         
         XCTAssertEqual(location.coordinate.latitude, coordinate.latitude)
         XCTAssertEqual(location.coordinate.longitude, coordinate.longitude)
         XCTAssertEqual(location.coordinate, fixLocation.coordinate)
-        XCTAssertEqual(location.timestamp, fixLocation.time)
+        XCTAssertEqual(location.timestamp.timeIntervalSince1970, fixLocation.time.timeIntervalSince1970,
+                       accuracy: 1e-6)
+        XCTAssertEqual(Int64(location.timestamp.nanosecondsSince1970), fixLocation.monotonicTimestampNanoseconds)
         XCTAssertEqual(location.speed, fixLocation.speed?.doubleValue)
         XCTAssertEqual(location.altitude, fixLocation.altitude?.doubleValue)
         XCTAssertEqual(location.horizontalAccuracy, fixLocation.accuracyHorizontal?.doubleValue)
@@ -89,7 +94,25 @@ class CLLocationTests: XCTestCase {
                                   speedAccuracy: speedAccuracy,
                                   timestamp: timestamp)
         }
-        
+        #if compiler(>=5.5)
+        if #available(iOS 15.0, *) {
+            let sourceInfo = CLLocationSourceInformation(
+                softwareSimulationState: true,
+                andExternalAccessoryState: false
+            )
+            location = CLLocation(coordinate: coordinate,
+                                  altitude: altitude,
+                                  horizontalAccuracy: horizontalAccuracy,
+                                  verticalAccuracy: verticalAccuracy,
+                                  course: bearing,
+                                  courseAccuracy: bearingAccuracy,
+                                  speed: speed,
+                                  speedAccuracy: speedAccuracy,
+                                  timestamp: timestamp,
+                                  sourceInfo: sourceInfo)
+        }
+        #endif
+
         let fixLocation = FixLocation(location)
         
         XCTAssertEqual(fixLocation.coordinate.latitude, coordinate.latitude)
@@ -105,6 +128,11 @@ class CLLocationTests: XCTestCase {
             XCTAssertEqual(fixLocation.bearingAccuracy?.doubleValue, bearingAccuracy)
             XCTAssertEqual(fixLocation.speedAccuracy?.doubleValue, speedAccuracy)
         }
+        #if compiler(>=5.5)
+        if #available(iOS 15.0, *) {
+            XCTAssertEqual(fixLocation.provider, "sim:1,acc:0")
+        }
+        #endif
     }
 }
 

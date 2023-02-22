@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import MapboxDirections
+import MapboxNavigationNative
 
 /**
  A router data source, also known as a location manager, supplies location data to a `Router` instance. For example, a `MapboxNavigationService` supplies location data to a `RouteController` or `LegacyRouteController`.
@@ -9,13 +10,77 @@ public protocol RouterDataSource: AnyObject {
     /**
      The location provider for the `Router.` This class is designated as the object that will provide location updates when requested.
      */
-    var locationProvider: NavigationLocationManager.Type { get }
+    var locationManagerType: NavigationLocationManager.Type { get }
 }
 
 /**
- A route and its index in a `RouteResponse` that sorts routes from most optimal to least optimal.
+ A `RouteResponse` object that sorts routes from most optimal to least optimal and selected route index in it.
  */
-public typealias IndexedRoute = (Route, Int)
+public struct IndexedRouteResponse {
+    /**
+     `RouteResponse` object, containing selection of routes to follow.
+     */
+    public let routeResponse: RouteResponse
+    /**
+     The index of the selected route within the `routeResponse`.
+     */
+    public let routeIndex: Int
+    
+    /**
+     Returns a route from the `routeResponse` under given `routeIndex` if possible.
+     */
+    public var currentRoute: Route? {
+        guard let routes = routeResponse.routes,
+              routes.count > routeIndex else {
+            return nil
+        }
+        return routeResponse.routes?[routeIndex]
+    }
+    
+    /**
+     Initializes a new `IndexedRouteResponse` object.
+     
+     - parameter routeResponse: `RouteResponse` object, containing routes and other related info.
+     - parameter routeIndex: Selected route index in an array.
+     */
+    public init(routeResponse: RouteResponse, routeIndex: Int) {
+        self.init(routeResponse: routeResponse,
+                  routeIndex: routeIndex,
+                  responseOrigin: .custom)
+    }
+    
+    /**
+     Describes the origin of current route response.
+     
+     Used by `Navigator` for better understanding current state and various features functioning.
+     */
+    internal let responseOrigin: RouterOrigin
+    
+    init(routeResponse: RouteResponse,
+         routeIndex: Int,
+         responseOrigin: RouterOrigin) {
+        self.routeResponse = routeResponse
+        self.routeIndex = routeIndex
+        self.responseOrigin = responseOrigin
+    }
+    
+    internal var validatedRouteOptions: RouteOptions {
+        switch routeResponse.options {
+        case let .match(matchOptions):
+            return RouteOptions(matchOptions: matchOptions)
+        case let .route(options):
+            return options
+        }
+    }
+}
+
+/**
+ A closure to be called when `RouteLeg` was changed.
+ 
+ - parameter result: Result, which in case of successfully changed leg contains the most recent
+ `RouteProgress` and error, in case of failure.
+ */
+public typealias AdvanceLegCompletionHandler = (_ result: Result<RouteProgress, Error>) -> Void
 
 /**
  A class conforming to the `Router` protocol tracks the user’s progress as they travel along a predetermined route. It calls methods on its `delegate`, which conforms to the `RouterDelegate` protocol, whenever significant events or decision points occur along the route. Despite its name, this protocol does not define the interface of a routing engine.
@@ -36,21 +101,56 @@ public protocol Router: CLLocationManagerDelegate {
     /**
      Intializes a new `RouteController`.
      
-     - parameter route: The route to follow.
      - parameter routeIndex: The index of the route within the original `RouteResponse` object.
-     - parameter directions: The Directions object that created `route`.
+     - parameter routeResponse: `RouteResponse` object, containing selection of routes to follow.
+     - parameter routingProvider: `RoutingProvider`, used to create a route during refreshing or rerouting.
      - parameter source: The data source for the RouteController.
      */
-    init(along route: Route, routeIndex: Int, options: RouteOptions, directions: Directions, dataSource source: RouterDataSource)
+    @available(*, deprecated, renamed: "init(alongRouteAtIndex:in:options:customRoutingProvider:dataSource:)")
+    init(alongRouteAtIndex routeIndex: Int,
+         in routeResponse: RouteResponse,
+         options: RouteOptions,
+         routingProvider: RoutingProvider,
+         dataSource source: RouterDataSource)
     
+    /**
+     Intializes a new `RouteController`.
+     
+     - parameter routeIndex: The index of the route within the original `RouteResponse` object.
+     - parameter routeResponse: `RouteResponse` object, containing selection of routes to follow.
+     - parameter customRoutingProvider: Custom `RoutingProvider`, used to create a route during refreshing or rerouting.
+     - parameter source: The data source for the RouteController.
+     */
+    init(alongRouteAtIndex routeIndex: Int,
+         in routeResponse: RouteResponse,
+         options: RouteOptions,
+         customRoutingProvider: RoutingProvider?,
+         dataSource source: RouterDataSource)
+    
+    /**
+     `RoutingProvider`, used to create a route during refreshing or rerouting.
+     */
+    @available(*, deprecated, renamed: "customRoutingProvider")
+    var routingProvider: RoutingProvider { get }
+    
+    /**
+     Custom `RoutingProvider`, used to create a route during refreshing or rerouting.
+     */
+    var customRoutingProvider: RoutingProvider? { get }
     /**
      Details about the user’s progress along the current route, leg, and step.
      */
     var routeProgress: RouteProgress { get }
-    
-    var indexedRoute: IndexedRoute { get set }
-    
+
+    /// The route along which the user is expected to travel.
+    ///
+    /// You can update the route using `Router.updateRoute(with:routeOptions:completion:)`.
     var route: Route { get }
+    
+    /// The `RouteResponse` containing the route along which the user is expected to travel, plus its index in this `RouteResponse`, if applicable.
+    ///
+    /// If you want to update the route use `Router.updateRoute(with:routeOptions:completion:)` method.
+    var indexedRouteResponse: IndexedRouteResponse { get }
     
     /**
      Given a users current location, returns a Boolean whether they are currently on the route.
@@ -59,6 +159,13 @@ public protocol Router: CLLocationManagerDelegate {
      */
     func userIsOnRoute(_ location: CLLocation) -> Bool
     func reroute(from: CLLocation, along: RouteProgress)
+    
+    /**
+     A radius around the current user position in which the API will avoid returning any significant maneuvers when rerouting.
+     
+     Provided `TimeInterval` value will be converted to meters using current speed. Default value is `8 seconds`.
+     */
+    var initialManeuverAvoidanceRadius: TimeInterval { get set }
     
     /**
      The idealized user location. Snapped to the route line, if applicable, otherwise raw or nil.
@@ -70,6 +177,11 @@ public protocol Router: CLLocationManagerDelegate {
      - note: This is a raw location received from `locationManager`. To obtain an idealized location, use the `location` property.
      */
     var rawLocation: CLLocation? { get }
+    
+    /**
+     The most recently received user heading, if any.
+     */
+    var heading: CLHeading? { get }
     
     /**
      If true, the `RouteController` attempts to calculate a more optimal route for the user on an interval defined by `RouteControllerProactiveReroutingInterval`. If `refreshesRoute` is enabled too, reroute attempt will be fired after route refreshing.
@@ -88,11 +200,43 @@ public protocol Router: CLLocationManagerDelegate {
      
      This is a convienence method provided to advance the leg index of any given router without having to worry about the internal data structure of the router.
      */
-    func advanceLegIndex()
+    func advanceLegIndex(completionHandler: AdvanceLegCompletionHandler?)
+
+    /// Asynchronously replaces currently active route with the provided `IndexedRouteResponse`.
+    ///
+    /// You can use this method to perform manual reroutes. `delegate` will be notified about route change via
+    /// `RouterDelegate.router(router:willRerouteFrom:)` and `RouterDelegate.router(_:didRerouteAlong:at:proactive:)`
+    /// methods.
+    /// - Parameters:
+    ///   - indexedRouteResponse: A `MapboxDirections.RouteResponse` object with a new route along with its index in
+    ///   routes array.
+    ///   - routeOptions: Route options used to create the route. You can pass nil to reuse the `RouteOptions` from the
+    ///   currently active route. If the new `indexedRoute` is for a different set of waypoints, `routeOptions` are
+    ///   required.
+    ///   - completion: A completion that will be called when when a new route is applied with a boolean indicating
+    ///   whether the change was successful. Until completion is called `routeProgress` will represent the old route.
+    ///
+    ///  - Important: This method can interfere with `Route.reroute(from:along:)` method. Before updating the route
+    ///  manually make sure that there is no reroute running by observing `RouterDelegate.router(_:willRerouteFrom:)`
+    ///  and `router(_:didRerouteAlong:at:proactive:)` `delegate` methods.
+    ///
+    ///  - Important: Updating the route can have an impact on your usage costs.
+    ///  From more info read the [Pricing Guide](https://docs.mapbox.com/ios/beta/navigation/guides/pricing/).
+    func updateRoute(with indexedRouteResponse: IndexedRouteResponse,
+                     routeOptions: RouteOptions?,
+                     completion: ((Bool) -> Void)?)
     
-    func enableLocationRecording()
-    func disableLocationRecording()
-    func locationHistory() -> String?
+    /// Forcefully stop navigation process without ability to continue it.
+    ///
+    /// Use this method to indicate that you no longer need navigation experience for current session/UI.
+    /// After finishing, `Router` will not be able to update route, route leg, issue a reroute or do any other update, related to route traversing.
+    func finishRouting()
+    
+    /// `AlternativeRoute`s user might take during this trip to reach the destination using another road.
+    ///
+    /// Array contents are updated automatically duting the trip. Alternative routes may be slower or longer then the main route.
+    /// To get updates, subscribe to `RouterDelegate.router(_:didUpdateAlternatives:removedAlternatives:)` or `Notification.Name.routeControllerDidUpdateAlternatives` notification.
+    var continuousAlternatives: [AlternativeRoute] { get }
 }
 
 protocol InternalRouter: AnyObject {
@@ -100,29 +244,32 @@ protocol InternalRouter: AnyObject {
     
     var lastRouteRefresh: Date? { get set }
     
-    var routeTask: URLSessionDataTask? { get set }
-    
-    var didFindFasterRoute: Bool { get set }
+    var routeTask: NavigationProviderRequest? { get set }
     
     var lastRerouteLocation: CLLocation? { get set }
-    
-    func setRoute(route: Route, routeIndex: Int, proactive: Bool)
     
     var isRerouting: Bool { get set }
     
     var isRefreshing: Bool { get set }
     
-    var directions: Directions { get }
+    var resolvedRoutingProvider: RoutingProvider { get }
     
-    var routeProgress: RouteProgress { get set }
+    var routeProgress: RouteProgress { get }
+    
+    var indexedRouteResponse: IndexedRouteResponse { get set }
+
+    func updateRoute(with indexedRouteResponse: IndexedRouteResponse,
+                     routeOptions: RouteOptions?,
+                     isProactive: Bool,
+                     completion: ((Bool) -> Void)?)
 }
 
 extension InternalRouter where Self: Router {
     
     func refreshAndCheckForFasterRoute(from location: CLLocation, routeProgress: RouteProgress) {
         if refreshesRoute {
-            refreshRoute(from: location, legIndex: routeProgress.legIndex) {
-                self.checkForFasterRoute(from: location, routeProgress: routeProgress)
+            refreshRoute(from: location, legIndex: routeProgress.legIndex) { [weak self] in
+                self?.checkForFasterRoute(from: location, routeProgress: routeProgress)
             }
         } else {
             checkForFasterRoute(from: location, routeProgress: routeProgress)
@@ -130,7 +277,7 @@ extension InternalRouter where Self: Router {
     }
     
     func refreshRoute(from location: CLLocation, legIndex: Int, completion: @escaping ()->()) {
-        guard refreshesRoute, let routeIdentifier = route.routeIdentifier else {
+        guard refreshesRoute else {
             completion()
             return
         }
@@ -151,8 +298,8 @@ extension InternalRouter where Self: Router {
             return
         }
         isRefreshing = true
-        
-        directions.refreshRoute(responseIdentifier: routeIdentifier, routeIndex: indexedRoute.1, fromLegAtIndex: legIndex) { [weak self] (session, result) in
+        resolvedRoutingProvider.refreshRoute(indexedRouteResponse: indexedRouteResponse,
+                                             fromLegAtIndex: UInt32(legIndex)) { [weak self] session, result in
             defer {
                 self?.isRefreshing = false
                 self?.lastRouteRefresh = nil
@@ -162,8 +309,14 @@ extension InternalRouter where Self: Router {
             guard case let .success(response) = result, let self = self else {
                 return
             }
+            self.indexedRouteResponse = .init(routeResponse: response, routeIndex: self.indexedRouteResponse.routeIndex)
             
-            self.routeProgress.refreshRoute(with: response.route, at: location)
+            guard let currentRoute = self.indexedRouteResponse.currentRoute else {
+                assertionFailure("Refreshed `RouteResponse` did not contain required `routeIndex`!")
+                return
+            }
+            
+            self.routeProgress.refreshRoute(with: currentRoute, at: self.location ?? location)
             
             var userInfo = [RouteController.NotificationUserInfoKey: Any]()
             userInfo[.routeProgressKey] = self.routeProgress
@@ -201,71 +354,96 @@ extension InternalRouter where Self: Router {
         if isRerouting { return }
         isRerouting = true
         
-        getDirections(from: location, along: routeProgress) { [weak self] (session, result) in
-            self?.isRerouting = false
-            
-            guard case let .success(response) = result else {
-                return
+        calculateRoutes(from: location, along: routeProgress) { [weak self] (session, result) in
+            guard let self = self else { return }
+
+            guard case let .success(indexedResponse) = result else {
+                self.isRerouting = false; return
             }
-            guard let route = response.routes?.first else { return }
+            let response = indexedResponse.routeResponse
+            guard let route = response.routes?.first else {
+                self.isRerouting = false; return
+            }
             
-            self?.lastProactiveRerouteDate = nil
+            self.lastProactiveRerouteDate = nil
             
             guard let firstLeg = route.legs.first, let firstStep = firstLeg.steps.first else {
-                return
+                self.isRerouting = false; return
             }
             
             let routeIsFaster = firstStep.expectedTravelTime >= RouteControllerMediumAlertInterval &&
                 currentUpcomingManeuver == firstLeg.steps[1] && route.expectedTravelTime <= 0.9 * durationRemaining
             
-            if routeIsFaster {
-                self?.setRoute(route: route, routeIndex: 0, proactive: true)
+            guard routeIsFaster else {
+                self.isRerouting = false; return
+            }
+            var routeOptions: RouteOptions?
+            if case let .route(options) = response.options {
+                routeOptions = options
+            }
+
+            // Prefer the most optimal route (the first one) over the route that matched the original choice.
+            let indexedRouteResponse = IndexedRouteResponse(routeResponse: response, routeIndex: 0)
+            self.updateRoute(with: indexedRouteResponse,
+                             routeOptions: routeOptions ?? self.routeProgress.routeOptions,
+                             isProactive: true) { [weak self] success in
+                self?.isRerouting = false
             }
         }
     }
     
-    func getDirections(from location: CLLocation, along progress: RouteProgress, completion: @escaping Directions.RouteCompletionHandler) {
+    /// Like RouteCompletionHandler, but including the index of the route in the response that is most similar to the route in the route progress.
+    typealias IndexedRouteCompletionHandler = (_ session: Directions.Session, _ result: Result<IndexedRouteResponse, DirectionsError>) -> Void
+    
+    /**
+     Asynchronously calculates route response from a location along an existing route tracked by the given route progress object.
+     
+     - parameter origin: The origin of each resulting route.
+     - parameter progress: The current route progress, along which the origin is located.
+     - parameter completion: The closure to execute once the routes have been calculated. If successful, the result includes the index of the route that is most similar to the passed-in `RouteProgress.route`, which is not necessarily the first route. The first route is the route considered to be the most optimal, even if it differs from the original choice.
+     */
+    func calculateRoutes(from origin: CLLocation, along progress: RouteProgress, completion: @escaping IndexedRouteCompletionHandler) {
         routeTask?.cancel()
-        let options = progress.reroutingOptions(with: location)
+        let options = progress.reroutingOptions(from: origin)
         
-        lastRerouteLocation = location
+        // https://github.com/mapbox/mapbox-navigation-ios/issues/3966
+        if isRerouting && (options.profileIdentifier == .automobile || options.profileIdentifier == .automobileAvoidingTraffic) {
+            options.initialManeuverAvoidanceRadius = initialManeuverAvoidanceRadius * origin.speed
+        }
         
-        routeTask = directions.calculate(options) {(session, result) in
-            
-            guard case let .success(response) = result else {
-                return completion(session, result)
+        lastRerouteLocation = origin
+        
+        routeTask = resolvedRoutingProvider.calculateRoutes(options: options) { [weak self] (session, result) in
+            guard let self = self else { return }
+            defer { self.routeTask = nil }
+            switch result {
+            case .failure(let error):
+                return completion(session, .failure(error))
+            case .success(let response):
+                guard let mostSimilarIndex = response.routes?.index(mostSimilarTo: progress.route) else {
+                    return completion(session, .failure(.unableToRoute))
+                }
+                
+                return completion(session, .success(.init(routeResponse: response, routeIndex: mostSimilarIndex)))
             }
-            
-            guard let mostSimilar = response.routes?.mostSimilar(to: progress.route) else {
-                return completion(session, result)
-            }
-            
-            var modifiedResponse = response
-            modifiedResponse.routes?.removeAll { $0 == mostSimilar }
-            modifiedResponse.routes?.insert(mostSimilar, at: 0)
-            
-            return completion(session, .success(modifiedResponse))
         }
     }
     
-    func setRoute(route: Route, routeIndex: Int, proactive: Bool) {
-        let spokenInstructionIndex = routeProgress.currentLegProgress.currentStepProgress.spokenInstructionIndex
+    func announceImpendingReroute(at location: CLLocation) {
+        delegate?.router(self, willRerouteFrom: location)
         
-        if proactive {
-            didFindFasterRoute = true
-        }
-        defer {
-            didFindFasterRoute = false
-        }
+        var userInfo: [RouteController.NotificationUserInfoKey: Any] = [
+            .locationKey: location,
+        ]
+        userInfo[.headingKey] = heading
         
-        routeProgress = RouteProgress(route: route, routeIndex: routeIndex, options: routeProgress.routeOptions, legIndex: 0, spokenInstructionIndex: spokenInstructionIndex)
+        NotificationCenter.default.post(name: .routeControllerWillReroute, object: self, userInfo: userInfo)
     }
     
     func announce(reroute newRoute: Route, at location: CLLocation?, proactive: Bool) {
         var userInfo = [RouteController.NotificationUserInfoKey: Any]()
-        if let location = location {
-            userInfo[.locationKey] = location
-        }
+        userInfo[.locationKey] = location
+        userInfo[.headingKey] = heading
         userInfo[.isProactiveKey] = proactive
         NotificationCenter.default.post(name: .routeControllerDidReroute, object: self, userInfo: userInfo)
         delegate?.router(self, didRerouteAlong: routeProgress.route, at: location, proactive: proactive)
@@ -273,12 +451,22 @@ extension InternalRouter where Self: Router {
 }
 
 extension Array where Element: MapboxDirections.Route {
-    func mostSimilar(to route: Route) -> Route? {
+    func index(mostSimilarTo route: Route) -> Int? {
         let target = route.description
-        return self.min { (left, right) -> Bool in
-            let leftDistance = left.description.minimumEditDistance(to: target)
-            let rightDistance = right.description.minimumEditDistance(to: target)
-            return leftDistance < rightDistance
-        }
+        
+        guard let bestCandidate = map({
+            (route: $0, editDistance: $0.description.minimumEditDistance(to: target))
+        }).enumerated().min(by: { $0.element.editDistance < $1.element.editDistance }) else { return nil }
+
+        // If the most similar route is still more than 50% different from the original route,
+        // we fallback to the fastest route which index is 0.
+        let totalLength = Double(bestCandidate.element.route.description.count + target.description.count)
+        guard totalLength > 0 else { return 0 }
+        let differenceScore = Double(bestCandidate.element.editDistance) / totalLength
+        // Comparing to 0.25 as for "replacing the half of the string", since we add target and candidate lengths together
+        // Algorithm proposal: https://github.com/mapbox/mapbox-navigation-ios/pull/3664#discussion_r772194977
+        guard differenceScore < 0.25 else { return 0 }
+
+        return bestCandidate.offset
     }
 }

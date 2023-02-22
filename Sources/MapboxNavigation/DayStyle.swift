@@ -1,67 +1,23 @@
-import Foundation
-
-extension UIColor {
-    class var defaultRouteCasing: UIColor { get { return .defaultTintStroke } }
-    class var defaultRouteLayer: UIColor { get { return #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) } }
-    class var defaultAlternateLine: UIColor { get { return #colorLiteral(red: 0.6, green: 0.6, blue: 0.6, alpha: 1) } }
-    class var defaultAlternateLineCasing: UIColor { get { return #colorLiteral(red: 0.5019607843, green: 0.4980392157, blue: 0.5019607843, alpha: 1) } }
-    class var defaultTraversedRouteColor: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0) } }
-    class var defaultManeuverArrowStroke: UIColor { get { return .defaultRouteLayer } }
-    class var defaultManeuverArrow: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1) } }
-    
-    class var defaultTurnArrowPrimary: UIColor { get { return #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1) } }
-    class var defaultTurnArrowPrimaryHighlighted: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1) } }
-    class var defaultTurnArrowSecondary: UIColor { get { return #colorLiteral(red: 0.6196078431, green: 0.6196078431, blue: 0.6196078431, alpha: 1) } }
-    class var defaultTurnArrowSecondaryHighlighted: UIColor { get { return UIColor.white.withAlphaComponent(0.4) } }
-
-    class var defaultLaneArrowPrimary: UIColor { get { return #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1) } }
-    class var defaultLaneArrowSecondary: UIColor { get { return #colorLiteral(red: 0.6196078431, green: 0.6196078431, blue: 0.6196078431, alpha: 1) } }
-    class var defaultLaneArrowPrimaryHighlighted: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1) } }
-    class var defaultLaneArrowSecondaryHighlighted: UIColor { get { return #colorLiteral(red: 0.4, green: 0.4, blue: 0.4, alpha: 1) } }
-
-    class var defaultLaneArrowPrimaryCarPlay: UIColor { get { return #colorLiteral(red: 0.7649999857, green: 0.7649999857, blue: 0.7570000291, alpha: 1) } }
-    class var defaultLaneArrowSecondaryCarPlay: UIColor { get { return #colorLiteral(red: 0.4198532104, green: 0.4398920536, blue: 0.4437610507, alpha: 1) } }
-    
-    class var trafficUnknown: UIColor { get { return defaultRouteLayer } }
-    class var trafficLow: UIColor { get { return defaultRouteLayer } }
-    class var trafficModerate: UIColor { get { return #colorLiteral(red: 1, green: 0.5843137255, blue: 0, alpha: 1) } }
-    class var trafficHeavy: UIColor { get { return #colorLiteral(red: 1, green: 0.3019607843, blue: 0.3019607843, alpha: 1) } }
-    class var trafficSevere: UIColor { get { return #colorLiteral(red: 0.5607843137, green: 0.1411764706, blue: 0.2784313725, alpha: 1) } }
-    
-    class var defaultBuildingColor: UIColor { get { return #colorLiteral(red: 0.9833194452, green: 0.9843137255, blue: 0.9331936657, alpha: 0.8019049658) } }
-    class var defaultBuildingHighlightColor: UIColor { get { return #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 0.949406036) } }
-
-    class var routeDurationAnnotationColor: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1) } }
-    class var selectedRouteDurationAnnotationColor: UIColor { get { return #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) } }
-
-    class var routeDurationAnnotationTextColor: UIColor { get { return #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1) } }
-    class var selectedRouteDurationAnnotationTextColor: UIColor { get { return #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1) } }
-
-}
-
-extension UIColor {
-    // General styling
-    fileprivate class var defaultTint: UIColor { get { return #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) } }
-    fileprivate class var defaultTintStroke: UIColor { get { return #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) } }
-    fileprivate class var defaultPrimaryText: UIColor { get { return #colorLiteral(red: 45.0/255.0, green: 45.0/255.0, blue: 45.0/255.0, alpha: 1) } }
-}
-
-extension UIFont {
-    // General styling
-    fileprivate class var defaultPrimaryText: UIFont { get { return UIFont.systemFont(ofSize: 26) } }
-    fileprivate class var defaultSecondaryText: UIFont { get { return UIFont.systemFont(ofSize: 16) } }
-}
+import UIKit
+import MapboxMaps
 
 /**
  `DefaultStyle` is default style for Mapbox Navigation SDK.
  */
 open class DayStyle: Style {
+    
     public required init() {
         super.init()
-        mapStyleURL = MGLStyle.navigationDayStyleURL
+        
+        mapStyleURL = URL(string: StyleURI.navigationDay.rawValue)!
         previewMapStyleURL = mapStyleURL
         styleType = .day
-        statusBarStyle = .default
+        
+        if #available(iOS 13.0, *) {
+            statusBarStyle = .darkContent
+        } else {
+            statusBarStyle = .default
+        }
     }
     
     open override func apply() {
@@ -74,154 +30,466 @@ open class DayStyle: Style {
             tintColor = .defaultTint
         }
         
-        ArrivalTimeLabel.appearance().normalFont = UIFont.systemFont(ofSize: 18, weight: .medium).adjustedFont
-        ArrivalTimeLabel.appearance().normalTextColor = .defaultPrimaryText
-        BottomBannerView.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        Button.appearance().textColor = .defaultPrimaryText
-        CancelButton.appearance().tintColor = .defaultPrimaryText
+        let phoneTraitCollection = UITraitCollection(userInterfaceIdiom: .phone)
+        let padTraitCollection = UITraitCollection(userInterfaceIdiom: .pad)
+        let carPlayTraitCollection = UITraitCollection(userInterfaceIdiom: .carPlay)
         
-        CarPlayCompassView.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.6022227113)
-        CarPlayCompassView.appearance().cornerRadius = 4
-        CarPlayCompassView.appearance().borderWidth = 1.0 / (UIScreen.mainCarPlay?.scale ?? 2.0)
-        CarPlayCompassView.appearance().borderColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 0.6009573063)
-
-        DismissButton.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        DismissButton.appearance().textColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        DismissButton.appearance().textFont = UIFont.systemFont(ofSize: 20, weight: .medium).adjustedFont
-        DistanceLabel.appearance().unitFont = UIFont.systemFont(ofSize: 14, weight: .medium).adjustedFont
-        DistanceLabel.appearance().valueFont = UIFont.systemFont(ofSize: 22, weight: .medium).adjustedFont
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).unitFont = UIFont.systemFont(ofSize: 16.0).adjustedFont
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).valueFont = UIFont.boldSystemFont(ofSize: 20.0).adjustedFont
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).unitTextColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).valueTextColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
-        DistanceLabel.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
-        DistanceRemainingLabel.appearance().normalFont = UIFont.systemFont(ofSize: 18, weight: .medium).adjustedFont
-        DistanceRemainingLabel.appearance().normalTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
-        EndOfRouteButton.appearance().textColor = .darkGray
-        EndOfRouteButton.appearance().textFont = .systemFont(ofSize: 15)
-        EndOfRouteContentView.appearance().backgroundColor = .white
-        EndOfRouteStaticLabel.appearance().normalFont = .systemFont(ofSize: 14.0)
-        EndOfRouteStaticLabel.appearance().normalTextColor = #colorLiteral(red: 0.217173934, green: 0.3645851612, blue: 0.489295125, alpha: 1)
-        EndOfRouteTitleLabel.appearance().normalFont = .systemFont(ofSize: 36.0)
-        EndOfRouteTitleLabel.appearance().normalTextColor = .black
-        ExitView.appearance().backgroundColor = .clear
-        ExitView.appearance().borderWidth = 1.0
-        ExitView.appearance().cornerRadius = 5.0
-        ExitView.appearance().foregroundColor = .black
-        ExitView.appearance(for: UITraitCollection(userInterfaceIdiom: .carPlay)).foregroundColor = .white
-        FloatingButton.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        FloatingButton.appearance().tintColor = tintColor
-        GenericRouteShield.appearance().backgroundColor = .clear
-        GenericRouteShield.appearance().borderWidth = 1.0
-        GenericRouteShield.appearance().cornerRadius = 5.0
-        GenericRouteShield.appearance().foregroundColor = .black
-        GenericRouteShield.appearance(for: UITraitCollection(userInterfaceIdiom: .carPlay)).foregroundColor = .white
-        InstructionsBannerView.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        InstructionsCardContainerView.appearance(whenContainedInInstancesOf: [InstructionsCardCell.self]).customBackgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        InstructionsCardContainerView.appearance(whenContainedInInstancesOf: [InstructionsCardCell.self]).highlightedBackgroundColor = UIColor(red: 0.26, green: 0.39, blue: 0.98, alpha: 1.0)
-        InstructionsCardContainerView.appearance(whenContainedInInstancesOf: [InstructionsCardCell.self]).clipsToBounds = true
-        InstructionsCardContainerView.appearance(whenContainedInInstancesOf: [InstructionsCardCell.self]).cornerRadius = 20
-        LaneView.appearance(for: UITraitCollection(userInterfaceIdiom: .carPlay)).primaryColor = .defaultLaneArrowPrimaryCarPlay
-        LaneView.appearance(for: UITraitCollection(userInterfaceIdiom: .carPlay)).secondaryColor = .defaultLaneArrowSecondaryCarPlay
-        LaneView.appearance(whenContainedInInstancesOf: [LanesView.self]).primaryColor = .defaultLaneArrowPrimary
-        LaneView.appearance(whenContainedInInstancesOf: [LanesView.self]).secondaryColor = .defaultLaneArrowSecondary
-        LaneView.appearance(whenContainedInInstancesOf: [LanesView.self]).primaryColorHighlighted = .defaultLaneArrowPrimaryHighlighted
-        LaneView.appearance(whenContainedInInstancesOf: [LanesView.self]).secondaryColorHighlighted = .defaultLaneArrowSecondaryHighlighted
-        LaneView.appearance().primaryColor = .defaultLaneArrowPrimaryCarPlay
-        LaneView.appearance().secondaryColor = .defaultLaneArrowSecondaryCarPlay
-        LaneView.appearance().primaryColorHighlighted = .defaultLaneArrowPrimaryHighlighted
-        LaneView.appearance().secondaryColorHighlighted = .defaultLaneArrowSecondaryHighlighted
-        LanesView.appearance().backgroundColor = #colorLiteral(red: 0.968627451, green: 0.968627451, blue: 0.968627451, alpha: 1)
-        LineView.appearance().lineColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1)
-        ManeuverView.appearance().backgroundColor = .clear
-        ManeuverView.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).primaryColor = .defaultTurnArrowPrimary
-        ManeuverView.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).secondaryColor = .defaultTurnArrowSecondary
-        ManeuverView.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).primaryColor = .defaultTurnArrowPrimary
-        ManeuverView.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).secondaryColor = .defaultTurnArrowSecondary
-        ManeuverView.appearance(whenContainedInInstancesOf: [NextBannerView.self]).primaryColor = .defaultTurnArrowPrimary
-        ManeuverView.appearance(whenContainedInInstancesOf: [NextBannerView.self]).secondaryColor = .defaultTurnArrowSecondary
-        ManeuverView.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).primaryColor = .defaultTurnArrowPrimary
-        ManeuverView.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).secondaryColor = .defaultTurnArrowSecondary
-        ManeuverView.appearance().primaryColorHighlighted = .defaultTurnArrowPrimaryHighlighted
-        ManeuverView.appearance().secondaryColorHighlighted = .defaultTurnArrowSecondaryHighlighted
-        NavigationMapView.appearance().maneuverArrowColor = .defaultManeuverArrow
-        NavigationMapView.appearance().maneuverArrowStrokeColor = .defaultManeuverArrowStroke
-        NavigationMapView.appearance().routeAlternateColor = .defaultAlternateLine
-        NavigationMapView.appearance().routeCasingColor = .defaultRouteCasing
-        NavigationMapView.appearance().traversedRouteColor = .defaultTraversedRouteColor
-        NavigationMapView.appearance().trafficHeavyColor = .trafficHeavy
-        NavigationMapView.appearance().trafficLowColor = .trafficLow
-        NavigationMapView.appearance().trafficModerateColor = .trafficModerate
-        NavigationMapView.appearance().trafficSevereColor = .trafficSevere
-        NavigationMapView.appearance().trafficUnknownColor = .trafficUnknown
-        NavigationMapView.appearance().buildingDefaultColor = .defaultBuildingColor
-        NavigationMapView.appearance().buildingHighlightColor = .defaultBuildingHighlightColor
-        NavigationMapView.appearance().routeDurationAnnotationColor = .routeDurationAnnotationColor
-        NavigationMapView.appearance().routeDurationAnnotationSelectedColor = .selectedRouteDurationAnnotationColor
-        NavigationMapView.appearance().routeDurationAnnotationFontName = "DIN Pro Medium"
-        NavigationMapView.appearance().routeDurationAnnotationTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        NavigationMapView.appearance().routeDurationAnnotationSelectedTextColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        NavigationView.appearance().backgroundColor = #colorLiteral(red: 0.764706, green: 0.752941, blue: 0.733333, alpha: 1)
-        NextBannerView.appearance().backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
-        NextBannerView.appearance(whenContainedInInstancesOf:[InstructionsCardContainerView.self]).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
-        NextInstructionLabel.appearance().normalFont = UIFont.systemFont(ofSize: 20, weight: .medium).adjustedFont
-        NextInstructionLabel.appearance().normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        NextInstructionLabel.appearance(whenContainedInInstancesOf: [NextBannerView.self]).normalTextColor = UIColor(red: 0.15, green: 0.24, blue: 0.34, alpha: 1.0)
-        NextInstructionLabel.appearance(whenContainedInInstancesOf: [NextBannerView.self]).textColorHighlighted = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-        NextInstructionLabel.appearance(whenContainedInInstancesOf: [NextBannerView.self]).normalFont = UIFont.systemFont(ofSize: 14.0).adjustedFont
-        PrimaryLabel.appearance().normalFont = UIFont.systemFont(ofSize: 30, weight: .medium).adjustedFont
-        PrimaryLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        PrimaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        PrimaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).textColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        PrimaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).normalFont = UIFont.boldSystemFont(ofSize: 24.0).adjustedFont
-        PrimaryLabel.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        ProgressBar.appearance().barColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 1)
-        RatingControl.appearance().normalColor = #colorLiteral(red: 0.8508961797, green: 0.8510394692, blue: 0.850877285, alpha: 1)
-        RatingControl.appearance().selectedColor = #colorLiteral(red: 0.1205472574, green: 0.2422055006, blue: 0.3489340544, alpha: 1)
-        ReportButton.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        ReportButton.appearance().textColor = tintColor!
-        ReportButton.appearance().textFont = UIFont.systemFont(ofSize: 15, weight: .medium).adjustedFont
-        ResumeButton.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        ResumeButton.appearance().tintColor = .defaultPrimaryText
-        SecondaryLabel.appearance().normalFont = UIFont.systemFont(ofSize: 26, weight: .medium).adjustedFont
-        SecondaryLabel.appearance(whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
-        SecondaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
-        SecondaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).textColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        SecondaryLabel.appearance(whenContainedInInstancesOf: [InstructionsCardView.self]).normalFont = UIFont.boldSystemFont(ofSize: 18.0).adjustedFont
-        SecondaryLabel.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
-        SeparatorView.appearance().backgroundColor = #colorLiteral(red: 0.737254902, green: 0.7960784314, blue: 0.8705882353, alpha: 1)
-        SpeedLimitView.appearance().signBackColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        SpeedLimitView.appearance().textColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
-        SpeedLimitView.appearance().regulatoryBorderColor = #colorLiteral(red: 0.800, green: 0, blue: 0, alpha: 1)
-        StatusView.appearance().backgroundColor = UIColor.black.withAlphaComponent(2.0/3.0)
-        StepInstructionsView.appearance().backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
-        StepListIndicatorView.appearance().gradientColors = [#colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1), #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1), #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)]
-        StepTableViewCell.appearance().backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
-        StepsBackgroundView.appearance().backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
-        StylableLabel.appearance(whenContainedInInstancesOf: [CarPlayCompassView.self]).normalFont = UIFont.systemFont(ofSize: 12, weight: .medium).adjustedFont
-        StylableLabel.appearance(whenContainedInInstancesOf: [CarPlayCompassView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
-        TimeRemainingLabel.appearance().normalFont = UIFont.systemFont(ofSize: 28, weight: .medium).adjustedFont
-        TimeRemainingLabel.appearance().normalTextColor = .defaultPrimaryText
-        TimeRemainingLabel.appearance().trafficHeavyColor = #colorLiteral(red:0.91, green:0.20, blue:0.25, alpha:1.0)
-        TimeRemainingLabel.appearance().trafficLowColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
-        TimeRemainingLabel.appearance().trafficModerateColor = #colorLiteral(red:0.95, green:0.65, blue:0.31, alpha:1.0)
-        TimeRemainingLabel.appearance().trafficSevereColor = #colorLiteral(red: 0.7705719471, green: 0.1753477752, blue: 0.1177056804, alpha: 1)
-        TimeRemainingLabel.appearance().trafficUnknownColor = .defaultPrimaryText
-        TopBannerView.appearance().backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        UserPuckCourseView.appearance().puckColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 1)
-        UserPuckCourseView.appearance().stalePuckColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-        UserHaloCourseView.appearance().haloColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.5)
-        UserHaloCourseView.appearance().haloRingColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 0.3)
-        UserHaloCourseView.appearance().haloRadius = 100.0
-        WayNameLabel.appearance().normalFont = UIFont.systemFont(ofSize:20, weight: .medium).adjustedFont
-        WayNameLabel.appearance().normalTextColor = #colorLiteral(red: 0.968627451, green: 0.968627451, blue: 0.968627451, alpha: 1)
-        WayNameView.appearance().backgroundColor = UIColor.defaultRouteLayer.withAlphaComponent(0.85)
-        WayNameView.appearance().borderColor = UIColor.defaultRouteCasing.withAlphaComponent(0.8)
+        // Style is applied similarly on iPhone and iPad. Since it's possible to change appearance on CarPlay, style
+        // for it is applied separately.
+        if traitCollection.containsTraits(in: phoneTraitCollection) || traitCollection.containsTraits(in: padTraitCollection) {
+            applyPhoneOrPadStyling(for: phoneTraitCollection)
+            applyPhoneOrPadStyling(for: padTraitCollection)
+        } else if traitCollection.containsTraits(in: carPlayTraitCollection) {
+            applyCarPlayStyling()
+        }
+    }
+    
+    /**
+     Applies default style for `.phone` and `.pad` trait collections.
+     
+     Beware that `ExitView` and `GenericRouteShield` directly access appearance values while caching
+     their styles.
+     */
+    func applyPhoneOrPadStyling(for traitCollection: UITraitCollection) {
+        StepsBackgroundView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        
+        StepInstructionsView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        StepListIndicatorView.appearance(for: traitCollection).gradientColors = [#colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1), #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1), #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)]
+        StepTableViewCell.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        UITableView.appearance(for: traitCollection, whenContainedInInstancesOf: [StepsViewController.self]).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        
+        StepsTableHeaderView.appearance(for: traitCollection).tintColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        StepsTableHeaderView.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        
+        #if swift(>=5.5)
+        if #available(iOS 15.0, *) {
+            UITableView.appearance(for: traitCollection, whenContainedInInstancesOf: [StepsViewController.self]).sectionHeaderTopPadding = 0.0
+        }
+        #endif
+        
+        UILabel.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).backgroundColor = .white
+        UILabel.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).textColor = .black
+        FeedbackStyleView.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).backgroundColor = .white
+        FeedbackCollectionView.appearance(for: traitCollection).backgroundColor = .white
+        FeedbackCollectionView.appearance(for: traitCollection).cellColor = .black
+        
+        DismissButton.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        DismissButton.appearance(for: traitCollection).textColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        DismissButton.appearance(for: traitCollection).textFont = UIFont.systemFont(ofSize: 20.0, weight: .medium).adjustedFont
+        
+        EndOfRouteButton.appearance(for: traitCollection).textColor = .darkGray
+        EndOfRouteButton.appearance(for: traitCollection).textFont = .systemFont(ofSize: 15.0)
+        EndOfRouteContentView.appearance(for: traitCollection).backgroundColor = .white
+        EndOfRouteStaticLabel.appearance(for: traitCollection).normalFont = .systemFont(ofSize: 14.0)
+        EndOfRouteStaticLabel.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.217173934, green: 0.3645851612, blue: 0.489295125, alpha: 1)
+        EndOfRouteTitleLabel.appearance(for: traitCollection).normalFont = .systemFont(ofSize: 36.0)
+        EndOfRouteTitleLabel.appearance(for: traitCollection).normalTextColor = .black
+        EndOfRouteCommentView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        EndOfRouteCommentView.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.1205472574, green: 0.2422055006, blue: 0.3489340544, alpha: 1)
+        EndOfRouteCommentView.appearance(for: traitCollection).tintColor = #colorLiteral(red: 0.1205472574, green: 0.2422055006, blue: 0.3489340544, alpha: 1)
+        
+        PrimaryLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 30.0, weight: .medium).adjustedFont
+        PrimaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        PrimaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        PrimaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).textColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        PrimaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).normalFont = UIFont.boldSystemFont(ofSize: 24.0).adjustedFont
+        PrimaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        
+        SecondaryLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 26.0, weight: .medium).adjustedFont
+        SecondaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
+        SecondaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
+        SecondaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).textColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        SecondaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).normalFont = UIFont.boldSystemFont(ofSize: 18.0).adjustedFont
+        SecondaryLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).normalTextColor = #colorLiteral(red: 0.2156862745, green: 0.2156862745, blue: 0.2156862745, alpha: 1)
+        
+        InstructionLabel.appearance(for: traitCollection).roadShieldBlackColor = .roadShieldBlackColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldBlueColor = .roadShieldBlueColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldGreenColor = .roadShieldGreenColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldRedColor = .roadShieldRedColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldWhiteColor = .roadShieldWhiteColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldYellowColor = .roadShieldYellowColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldOrangeColor = .roadShieldOrangeColor
+        InstructionLabel.appearance(for: traitCollection).roadShieldDefaultColor = .roadShieldDefaultColor
+        
+        WayNameLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 20.0, weight: .medium).adjustedFont
+        WayNameLabel.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.968627451, green: 0.968627451, blue: 0.968627451, alpha: 1)
+        WayNameLabel.appearance(for: traitCollection).roadShieldBlackColor = .roadShieldBlackColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldBlueColor = .roadShieldBlueColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldGreenColor = .roadShieldGreenColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldRedColor = .roadShieldRedColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldWhiteColor = .roadShieldWhiteColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldYellowColor = .roadShieldYellowColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldOrangeColor = .roadShieldOrangeColor
+        WayNameLabel.appearance(for: traitCollection).roadShieldDefaultColor = .roadShieldDefaultColor
+        
+        WayNameView.appearance(for: traitCollection).backgroundColor = UIColor.defaultRouteLayer.withAlphaComponent(0.85)
+        WayNameView.appearance(for: traitCollection).borderColor = UIColor.defaultRouteCasing.withAlphaComponent(0.8)
+        WayNameView.appearance(for: traitCollection).borderWidth = 1.0
+        
+        NavigationMapView.appearance(for: traitCollection).maneuverArrowColor = .defaultManeuverArrow
+        NavigationMapView.appearance(for: traitCollection).maneuverArrowStrokeColor = .defaultManeuverArrowStroke
+        NavigationMapView.appearance(for: traitCollection).routeAlternateColor = .defaultAlternateLine
+        NavigationMapView.appearance(for: traitCollection).routeCasingColor = .defaultRouteCasing
+        NavigationMapView.appearance(for: traitCollection).traversedRouteColor = .defaultTraversedRouteColor
+        NavigationMapView.appearance(for: traitCollection).trafficHeavyColor = .trafficHeavy
+        NavigationMapView.appearance(for: traitCollection).trafficLowColor = .trafficLow
+        NavigationMapView.appearance(for: traitCollection).trafficModerateColor = .trafficModerate
+        NavigationMapView.appearance(for: traitCollection).trafficSevereColor = .trafficSevere
+        NavigationMapView.appearance(for: traitCollection).trafficUnknownColor = .trafficUnknown
+        NavigationMapView.appearance(for: traitCollection).alternativeTrafficHeavyColor = .alternativeTrafficHeavy
+        NavigationMapView.appearance(for: traitCollection).alternativeTrafficLowColor = .alternativeTrafficLow
+        NavigationMapView.appearance(for: traitCollection).alternativeTrafficModerateColor = .alternativeTrafficModerate
+        NavigationMapView.appearance(for: traitCollection).alternativeTrafficSevereColor = .alternativeTrafficSevere
+        NavigationMapView.appearance(for: traitCollection).alternativeTrafficUnknownColor = .alternativeTrafficUnknown
+        NavigationMapView.appearance(for: traitCollection).buildingDefaultColor = .defaultBuildingColor
+        NavigationMapView.appearance(for: traitCollection).buildingHighlightColor = .defaultBuildingHighlightColor
+        NavigationMapView.appearance(for: traitCollection).routeDurationAnnotationColor = .routeDurationAnnotationColor
+        NavigationMapView.appearance(for: traitCollection).routeDurationAnnotationSelectedColor = .selectedRouteDurationAnnotationColor
+        NavigationMapView.appearance(for: traitCollection).routeDurationAnnotationFontNames = UIFont.defaultNavigationSymbolLayerFontNames
+        NavigationMapView.appearance(for: traitCollection).routeDurationAnnotationTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        NavigationMapView.appearance(for: traitCollection).routeDurationAnnotationSelectedTextColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        
+        UserPuckCourseView.appearance(for: traitCollection).puckColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 1)
+        
+        UserHaloCourseView.appearance(for: traitCollection).haloColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.5)
+        UserHaloCourseView.appearance(for: traitCollection).haloRingColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 0.3)
+        UserHaloCourseView.appearance(for: traitCollection).haloRadius = 100.0
+        
+        DistanceLabel.appearance(for: traitCollection).unitFont = UIFont.systemFont(ofSize: 14.0, weight: .medium).adjustedFont
+        DistanceLabel.appearance(for: traitCollection).valueFont = UIFont.systemFont(ofSize: 22.0, weight: .medium).adjustedFont
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).unitFont = UIFont.systemFont(ofSize: 16.0).adjustedFont
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).valueFont = UIFont.boldSystemFont(ofSize: 20.0).adjustedFont
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).unitTextColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).valueTextColorHighlighted = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).unitTextColor = #colorLiteral(red: 0.6274509804, green: 0.6274509804, blue: 0.6274509804, alpha: 1)
+        DistanceLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).valueTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
+        
+        SpeedLimitView.appearance(for: traitCollection).signBackColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        SpeedLimitView.appearance(for: traitCollection).textColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
+        SpeedLimitView.appearance(for: traitCollection).regulatoryBorderColor = #colorLiteral(red: 0.800, green: 0, blue: 0, alpha: 1)
+        
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).customBackgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).highlightedBackgroundColor = #colorLiteral(red: 0.26, green: 0.39, blue: 0.98, alpha: 1.0)
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).separatorColor = #colorLiteral(red: 0.737254902, green: 0.7960784314, blue: 0.8705882353, alpha: 1)
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).highlightedSeparatorColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).clipsToBounds = true
+        InstructionsCardContainerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardCell.self]).cornerRadius = 20.0
+        
+        // On iOS, for Day style, regardless of currently used `UIUserInterfaceStyle`, `ExitView` and
+        // `GenericRouteShield` use black color as a default one.
+        ExitView.appearance(for: traitCollection).backgroundColor = .clear
+        ExitView.appearance(for: traitCollection).borderWidth = 1.0
+        ExitView.appearance(for: traitCollection).cornerRadius = 5.0
+        ExitView.appearance(for: traitCollection).foregroundColor = .black
+        ExitView.appearance(for: traitCollection).borderColor = .black
+        
+        GenericRouteShield.appearance(for: traitCollection).backgroundColor = .clear
+        GenericRouteShield.appearance(for: traitCollection).borderWidth = 1.0
+        GenericRouteShield.appearance(for: traitCollection).cornerRadius = 5.0
+        GenericRouteShield.appearance(for: traitCollection).foregroundColor = .black
+        GenericRouteShield.appearance(for: traitCollection).borderColor = .black
+        
+        UILabel.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).backgroundColor = .white
+        UILabel.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).textColor = .black
+        FeedbackStyleView.appearance(for: traitCollection, whenContainedInInstancesOf: [FeedbackViewController.self]).backgroundColor = .white
+        FeedbackCollectionView.appearance(for: traitCollection).backgroundColor = .white
+        FeedbackCollectionView.appearance(for: traitCollection).cellColor = .black
+        FeedbackSubtypeCollectionViewCell.appearance(for: traitCollection).normalCircleColor = .white
+        FeedbackSubtypeCollectionViewCell.appearance(for: traitCollection).normalCircleOutlineColor = .darkText
+        FeedbackSubtypeCollectionViewCell.appearance(for: traitCollection).selectedCircleColor = #colorLiteral(red: 0, green: 0.47843137, blue: 1, alpha: 1)
+        
+        let regularAndRegularSizeClassTraitCollection = UITraitCollection(traitsFrom: [
+            traitCollection,
+            UITraitCollection(verticalSizeClass: .regular),
+            UITraitCollection(horizontalSizeClass: .regular)
+        ])
+        
+        let regularAndCompactSizeClassTraitCollection = UITraitCollection(traitsFrom: [
+            traitCollection,
+            UITraitCollection(verticalSizeClass: .regular),
+            UITraitCollection(horizontalSizeClass: .compact)
+        ])
+        
+        let compactAndRegularSizeClassTraitCollection = UITraitCollection(traitsFrom: [
+            traitCollection,
+            UITraitCollection(verticalSizeClass: .compact),
+            UITraitCollection(horizontalSizeClass: .regular)
+        ])
+        
+        let compactAndCompactSizeClassTraitCollection = UITraitCollection(traitsFrom: [
+            traitCollection,
+            UITraitCollection(verticalSizeClass: .compact),
+            UITraitCollection(horizontalSizeClass: .compact)
+        ])
+        
+        TimeRemainingLabel.appearance(for: regularAndRegularSizeClassTraitCollection).normalFont = UIFont.systemFont(ofSize: 28.0, weight: .medium).adjustedFont
+        TimeRemainingLabel.appearance(for: regularAndCompactSizeClassTraitCollection).normalFont = UIFont.systemFont(ofSize: 28.0, weight: .medium).adjustedFont
+        TimeRemainingLabel.appearance(for: compactAndRegularSizeClassTraitCollection).normalFont = UIFont.systemFont(ofSize: 28.0, weight: .medium).adjustedFont
+        TimeRemainingLabel.appearance(for: compactAndCompactSizeClassTraitCollection).normalFont = UIFont.systemFont(ofSize: 18.0, weight: .medium).adjustedFont
+        TimeRemainingLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 28.0, weight: .medium).adjustedFont
+        TimeRemainingLabel.appearance(for: traitCollection).normalTextColor = .defaultPrimaryText
+        TimeRemainingLabel.appearance(for: traitCollection).trafficHeavyColor = #colorLiteral(red:0.91, green:0.20, blue:0.25, alpha:1.0)
+        TimeRemainingLabel.appearance(for: traitCollection).trafficLowColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
+        TimeRemainingLabel.appearance(for: traitCollection).trafficModerateColor = #colorLiteral(red:0.95, green:0.65, blue:0.31, alpha:1.0)
+        TimeRemainingLabel.appearance(for: traitCollection).trafficSevereColor = #colorLiteral(red: 0.7705719471, green: 0.1753477752, blue: 0.1177056804, alpha: 1)
+        TimeRemainingLabel.appearance(for: traitCollection).trafficUnknownColor = .defaultPrimaryText
+        
+        StepsTableHeaderView.appearance(for: traitCollection).tintColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        StepsTableHeaderView.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        
+        Button.appearance(for: traitCollection).textColor = .defaultPrimaryText
+        
+        CancelButton.appearance(for: traitCollection).tintColor = .defaultPrimaryText
+        
+        FloatingButton.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        FloatingButton.appearance(for: traitCollection).tintColor = tintColor
+        
+        DistanceRemainingLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 18.0, weight: .medium).adjustedFont
+        DistanceRemainingLabel.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.431372549, green: 0.431372549, blue: 0.431372549, alpha: 1)
+        
+        NavigationView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.764706, green: 0.752941, blue: 0.733333, alpha: 1)
+        
+        SeparatorView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.737254902, green: 0.7960784314, blue: 0.8705882353, alpha: 1)
+        SeparatorView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
+        
+        RatingControl.appearance(for: traitCollection).normalColor = #colorLiteral(red: 0.8508961797, green: 0.8510394692, blue: 0.850877285, alpha: 1)
+        RatingControl.appearance(for: traitCollection).selectedColor = #colorLiteral(red: 0.1205472574, green: 0.2422055006, blue: 0.3489340544, alpha: 1)
+        
+        ResumeButton.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        ResumeButton.appearance(for: traitCollection).tintColor = .defaultPrimaryText
+        ResumeButton.appearance(for: traitCollection).borderColor = #colorLiteral(red: 0.737254902, green: 0.7960784314, blue: 0.8705882353, alpha: 1)
+        ResumeButton.appearance(for: traitCollection).borderWidth = 1 / UIScreen.main.scale
+        ResumeButton.appearance(for: traitCollection).cornerRadius = 5.0
+        
+        NextBannerView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        NextBannerView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardContainerView.self]).backgroundColor = #colorLiteral(red: 0.9675388083, green: 0.9675388083, blue: 0.9675388083, alpha: 1)
+        
+        StatusView.appearance(for: traitCollection).backgroundColor = UIColor.black.withAlphaComponent(2.0 / 3.0)
+        
+        TopBannerView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        BottomBannerView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        BottomPaddingView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        InstructionsBannerView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        
+        ArrivalTimeLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 18.0, weight: .medium).adjustedFont
+        ArrivalTimeLabel.appearance(for: traitCollection).normalTextColor = .defaultPrimaryText
+        
+        NextInstructionLabel.appearance(for: traitCollection).normalFont = UIFont.systemFont(ofSize: 20.0, weight: .medium).adjustedFont
+        NextInstructionLabel.appearance(for: traitCollection).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        NextInstructionLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [NextBannerView.self]).normalTextColor = UIColor(red: 0.15, green: 0.24, blue: 0.34, alpha: 1.0)
+        NextInstructionLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [NextBannerView.self]).textColorHighlighted = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        NextInstructionLabel.appearance(for: traitCollection, whenContainedInInstancesOf: [NextBannerView.self]).normalFont = UIFont.systemFont(ofSize: 14.0).adjustedFont
+        
+        LaneView.appearance(for: traitCollection).primaryColor = .defaultLaneArrowPrimary
+        LaneView.appearance(for: traitCollection).secondaryColor = .defaultLaneArrowSecondary
+        LaneView.appearance(for: traitCollection).primaryColorHighlighted = .defaultLaneArrowPrimaryHighlighted
+        LaneView.appearance(for: traitCollection).secondaryColorHighlighted = .defaultLaneArrowSecondaryHighlighted
+        
+        LanesView.appearance(for: traitCollection).backgroundColor = #colorLiteral(red: 0.968627451, green: 0.968627451, blue: 0.968627451, alpha: 1)
+        
+        ManeuverView.appearance(for: traitCollection).backgroundColor = .clear
+        ManeuverView.appearance(for: traitCollection).primaryColorHighlighted = .defaultTurnArrowPrimaryHighlighted
+        ManeuverView.appearance(for: traitCollection).secondaryColorHighlighted = .defaultTurnArrowSecondaryHighlighted
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).primaryColor = .defaultTurnArrowPrimary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsBannerView.self]).secondaryColor = .defaultTurnArrowSecondary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).primaryColor = .defaultTurnArrowPrimary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [InstructionsCardView.self]).secondaryColor = .defaultTurnArrowSecondary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [NextBannerView.self]).primaryColor = .defaultTurnArrowPrimary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [NextBannerView.self]).secondaryColor = .defaultTurnArrowSecondary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).primaryColor = .defaultTurnArrowPrimary
+        ManeuverView.appearance(for: traitCollection, whenContainedInInstancesOf: [StepInstructionsView.self]).secondaryColor = .defaultTurnArrowSecondary
+    }
+    
+    /**
+     Applies default style for CarPlay.
+     
+     Since it's possible to apply different appearances on iOS and CarPlay and some views are
+     re-used on both platforms, style for iOS and CarPlay views that are common is applied
+     independently.
+     */
+    func applyCarPlayStyling() {
+        let carPlayTraitCollection = UITraitCollection(userInterfaceIdiom: .carPlay)
+        
+        // `CarPlayCompassView` appearance styling. `CarPlayCompassView` is only used on CarPlay
+        // and is not shared across other platforms.
+        CarPlayCompassView.appearance(for: carPlayTraitCollection).backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.6022227113)
+        CarPlayCompassView.appearance(for: carPlayTraitCollection).cornerRadius = 4
+        CarPlayCompassView.appearance(for: carPlayTraitCollection).borderWidth = 1.0 / (UIScreen.mainCarPlay?.scale ?? 2.0)
+        CarPlayCompassView.appearance(for: carPlayTraitCollection).borderColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 0.6009573063)
+        
+        // `StylableLabel` is used in `CarPlayCompassView` to show compass direction.
+        StylableLabel.appearance(for: carPlayTraitCollection, whenContainedInInstancesOf: [CarPlayCompassView.self]).normalFont = UIFont.systemFont(ofSize: 12.0, weight: .medium).adjustedFont
+        StylableLabel.appearance(for: carPlayTraitCollection, whenContainedInInstancesOf: [CarPlayCompassView.self]).normalTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        
+        PrimaryLabel.appearance(for: carPlayTraitCollection).normalFont = UIFont.systemFont(ofSize: 30.0, weight: .medium).adjustedFont
+        
+        SecondaryLabel.appearance(for: carPlayTraitCollection).normalFont = UIFont.systemFont(ofSize: 26.0, weight: .medium).adjustedFont
+        
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldBlackColor = .roadShieldBlackColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldBlueColor = .roadShieldBlueColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldGreenColor = .roadShieldGreenColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldRedColor = .roadShieldRedColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldWhiteColor = .roadShieldWhiteColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldYellowColor = .roadShieldYellowColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldOrangeColor = .roadShieldOrangeColor
+        InstructionLabel.appearance(for: carPlayTraitCollection).roadShieldDefaultColor = .roadShieldDefaultColor
+        
+        WayNameLabel.appearance(for: carPlayTraitCollection).normalFont = UIFont.systemFont(ofSize: 13.0, weight: .medium).adjustedFont
+        WayNameLabel.appearance(for: carPlayTraitCollection).normalTextColor = #colorLiteral(red: 0.968627451, green: 0.968627451, blue: 0.968627451, alpha: 1)
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldBlackColor = .roadShieldBlackColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldBlueColor = .roadShieldBlueColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldGreenColor = .roadShieldGreenColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldRedColor = .roadShieldRedColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldWhiteColor = .roadShieldWhiteColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldYellowColor = .roadShieldYellowColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldOrangeColor = .roadShieldOrangeColor
+        WayNameLabel.appearance(for: carPlayTraitCollection).roadShieldDefaultColor = .roadShieldDefaultColor
+        
+        WayNameView.appearance(for: carPlayTraitCollection).backgroundColor = UIColor.defaultRouteLayer.withAlphaComponent(0.85)
+        WayNameView.appearance(for: carPlayTraitCollection).borderColor = UIColor.defaultRouteCasing.withAlphaComponent(0.8)
+        WayNameView.appearance(for: carPlayTraitCollection).borderWidth = 1.0
+        
+        NavigationMapView.appearance(for: carPlayTraitCollection).maneuverArrowColor = .defaultManeuverArrow
+        NavigationMapView.appearance(for: carPlayTraitCollection).maneuverArrowStrokeColor = .defaultManeuverArrowStroke
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeAlternateColor = .defaultAlternateLine
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeCasingColor = .defaultRouteCasing
+        NavigationMapView.appearance(for: carPlayTraitCollection).traversedRouteColor = .defaultTraversedRouteColor
+        NavigationMapView.appearance(for: carPlayTraitCollection).trafficHeavyColor = .trafficHeavy
+        NavigationMapView.appearance(for: carPlayTraitCollection).trafficLowColor = .trafficLow
+        NavigationMapView.appearance(for: carPlayTraitCollection).trafficModerateColor = .trafficModerate
+        NavigationMapView.appearance(for: carPlayTraitCollection).trafficSevereColor = .trafficSevere
+        NavigationMapView.appearance(for: carPlayTraitCollection).trafficUnknownColor = .trafficUnknown
+        NavigationMapView.appearance(for: carPlayTraitCollection).alternativeTrafficHeavyColor = .alternativeTrafficHeavy
+        NavigationMapView.appearance(for: carPlayTraitCollection).alternativeTrafficLowColor = .alternativeTrafficLow
+        NavigationMapView.appearance(for: carPlayTraitCollection).alternativeTrafficModerateColor = .alternativeTrafficModerate
+        NavigationMapView.appearance(for: carPlayTraitCollection).alternativeTrafficSevereColor = .alternativeTrafficSevere
+        NavigationMapView.appearance(for: carPlayTraitCollection).alternativeTrafficUnknownColor = .alternativeTrafficUnknown
+        NavigationMapView.appearance(for: carPlayTraitCollection).buildingDefaultColor = .defaultBuildingColor
+        NavigationMapView.appearance(for: carPlayTraitCollection).buildingHighlightColor = .defaultBuildingHighlightColor
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeDurationAnnotationColor = .routeDurationAnnotationColor
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeDurationAnnotationSelectedColor = .selectedRouteDurationAnnotationColor
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeDurationAnnotationFontNames = UIFont.defaultNavigationSymbolLayerFontNames
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeDurationAnnotationTextColor = #colorLiteral(red: 0.09803921569, green: 0.09803921569, blue: 0.09803921569, alpha: 1)
+        NavigationMapView.appearance(for: carPlayTraitCollection).routeDurationAnnotationSelectedTextColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        
+        UserPuckCourseView.appearance(for: carPlayTraitCollection).puckColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 1)
+        
+        UserHaloCourseView.appearance(for: carPlayTraitCollection).haloColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.5)
+        UserHaloCourseView.appearance(for: carPlayTraitCollection).haloRingColor = #colorLiteral(red: 0.149, green: 0.239, blue: 0.341, alpha: 0.3)
+        UserHaloCourseView.appearance(for: carPlayTraitCollection).haloRadius = 100.0
+        
+        SpeedLimitView.appearance(for: carPlayTraitCollection).signBackColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        SpeedLimitView.appearance(for: carPlayTraitCollection).textColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
+        SpeedLimitView.appearance(for: carPlayTraitCollection).regulatoryBorderColor = #colorLiteral(red: 0.800, green: 0, blue: 0, alpha: 1)
+        
+        ManeuverView.appearance(for: carPlayTraitCollection).backgroundColor = .clear
+        ManeuverView.appearance(for: carPlayTraitCollection).primaryColorHighlighted = .defaultTurnArrowPrimaryHighlighted
+        ManeuverView.appearance(for: carPlayTraitCollection).secondaryColorHighlighted = .defaultTurnArrowSecondaryHighlighted
+        
+        // In case if CarPlay supports `UIUserInterfaceStyle` styling will be applied for a
+        // `UITraitCollection`, which contains both `UIUserInterfaceIdiom` and `UIUserInterfaceStyle`.
+        // If not, `UITraitCollection` will only contain `UIUserInterfaceIdiom`.
+        if #available(iOS 12.0, *) {
+            let carPlayLightTraitCollection = UITraitCollection(traitsFrom: [
+                carPlayTraitCollection,
+                UITraitCollection(userInterfaceStyle: .light)
+            ])
+            applyCarPlayManeuversStyling(for: carPlayLightTraitCollection)
+            
+            let carPlayDarkTraitCollection = UITraitCollection(traitsFrom: [
+                carPlayTraitCollection,
+                UITraitCollection(userInterfaceStyle: .dark)
+            ])
+            applyCarPlayManeuversStyling(for: carPlayDarkTraitCollection)
+        } else {
+            applyDefaultCarPlayManeuversStyling()
+        }
+    }
+    
+    /**
+     Applies default styling for lane views, exit views and shields on CarPlay versions that support
+     light and dark appearance changes.
+     */
+    @available(iOS 12.0, *)
+    func applyCarPlayManeuversStyling(for traitCollection: UITraitCollection) {
+        // On CarPlay, `ExitView` and `GenericRouteShield` styling depends on `UIUserInterfaceStyle`,
+        // which was set on CarPlay external screen.
+        // In case if it was set to `UIUserInterfaceStyle.light` white color will be used, otherwise
+        // black.
+        // Due to iOS issue (`UIScreen.screens` returns CarPlay screen `traitCollection`
+        // property of which returns incorrect value), this property has to be taken from callbacks
+        // similar to: `UITraitEnvironment.traitCollectionDidChange(_:)`, or by creating `UITraitCollection`
+        // directly.
+        let defaultInstructionColor: UIColor
+        
+        let defaultLaneViewPrimaryColor: UIColor
+        let defaultLaneViewSecondaryColor: UIColor
+        
+        let defaultLaneArrowPrimaryHighlightedColor: UIColor
+        let defaultLaneArrowSecondaryHighlightedColor: UIColor
+        
+        switch traitCollection.userInterfaceStyle {
+        case .light, .unspecified:
+            defaultInstructionColor = UIColor.black
+            
+            defaultLaneViewPrimaryColor = .defaultLaneArrowPrimary
+            defaultLaneViewSecondaryColor = .defaultLaneArrowSecondary
+            
+            defaultLaneArrowPrimaryHighlightedColor = .defaultLaneArrowPrimaryHighlighted
+            defaultLaneArrowSecondaryHighlightedColor = .defaultLaneArrowSecondaryHighlighted
+        case .dark:
+            defaultInstructionColor = UIColor.white
+            
+            defaultLaneViewPrimaryColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+            defaultLaneViewSecondaryColor = #colorLiteral(red: 0.4198532104, green: 0.4398920536, blue: 0.4437610507, alpha: 1)
+            
+            defaultLaneArrowPrimaryHighlightedColor = .defaultLaneArrowPrimaryHighlighted
+            defaultLaneArrowSecondaryHighlightedColor = .defaultLaneArrowSecondaryHighlighted
+        @unknown default:
+            fatalError("Unknown userInterfaceStyle.")
+        }
+        
+        ExitView.appearance(for: traitCollection).backgroundColor = .clear
+        ExitView.appearance(for: traitCollection).borderWidth = 1.0
+        ExitView.appearance(for: traitCollection).cornerRadius = 5.0
+        ExitView.appearance(for: traitCollection).foregroundColor = defaultInstructionColor
+        ExitView.appearance(for: traitCollection).borderColor = defaultInstructionColor
+        
+        GenericRouteShield.appearance(for: traitCollection).backgroundColor = .clear
+        GenericRouteShield.appearance(for: traitCollection).borderWidth = 1.0
+        GenericRouteShield.appearance(for: traitCollection).cornerRadius = 5.0
+        GenericRouteShield.appearance(for: traitCollection).foregroundColor = defaultInstructionColor
+        GenericRouteShield.appearance(for: traitCollection).borderColor = defaultInstructionColor
+        
+        LaneView.appearance(for: traitCollection).primaryColor = defaultLaneViewPrimaryColor
+        LaneView.appearance(for: traitCollection).secondaryColor = defaultLaneViewSecondaryColor
+        
+        LaneView.appearance(for: traitCollection).primaryColorHighlighted = defaultLaneArrowPrimaryHighlightedColor
+        LaneView.appearance(for: traitCollection).secondaryColorHighlighted = defaultLaneArrowSecondaryHighlightedColor
+    }
+    
+    /**
+     Applies default styling for lane views, exit views and shields on CarPlay versions that do not support
+     light and dark appearance changes.
+     */
+    func applyDefaultCarPlayManeuversStyling() {
+        let defaultColor = UIColor.black
+        let carPlayTraitCollection = UITraitCollection(userInterfaceIdiom: .carPlay)
+        
+        ExitView.appearance(for: carPlayTraitCollection).foregroundColor = defaultColor
+        ExitView.appearance(for: carPlayTraitCollection).borderColor = defaultColor
+        
+        GenericRouteShield.appearance(for: carPlayTraitCollection).foregroundColor = defaultColor
+        GenericRouteShield.appearance(for: carPlayTraitCollection).borderColor = defaultColor
+        
+        LaneView.appearance(for: carPlayTraitCollection).primaryColor = .defaultLaneArrowPrimary
+        LaneView.appearance(for: carPlayTraitCollection).secondaryColor = .defaultLaneArrowSecondary
+        
+        LaneView.appearance(for: carPlayTraitCollection).primaryColorHighlighted = .defaultLaneArrowPrimaryHighlighted
+        LaneView.appearance(for: carPlayTraitCollection).secondaryColorHighlighted = .defaultLaneArrowSecondaryHighlighted
     }
 }

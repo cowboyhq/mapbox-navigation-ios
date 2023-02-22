@@ -1,49 +1,70 @@
 import XCTest
-import Mapbox
-import MapboxCoreNavigation
+import TestHelper
+@testable import MapboxCoreNavigation
 import MapboxDirections
 import MapboxSpeech
 import MapboxNavigation
+import MapboxCommon_Private
 
-class SKUTests: XCTestCase {
-    
-    // Billing per monthly active user (MAU), the default, corresponds to `MBXAccountsSKUID.navigationUser`.
-    
+#if DEBUG
+class SKUTests: TestCase {
+    private var navigator: MapboxCoreNavigation.Navigator? = nil
+
+    override func setUp() {
+        super.setUp()
+        navigator = Navigator.shared
+    }
+
+    override func tearDown() {
+        super.tearDown()
+        navigator = nil
+    }
+
     func testDirectionsSKU() {
-        let directionsSkuToken = Directions.skuToken
+        let expected: String = UUID().uuidString
+        billingServiceMock.onGetSKUTokenIfValid = { _ in
+            expected
+        }
+        XCTAssertEqual(Directions.shared.skuToken, "")
+        BillingHandler.shared.beginBillingSession(for: .freeDrive, uuid: .init())
+        let directionsSkuToken = Directions.shared.skuToken
         
-        XCTAssertNotNil(directionsSkuToken)
-        
-        XCTAssertEqual(directionsSkuToken?.skuId, SkuID.navigationUser.rawValue)
+        XCTAssertEqual(directionsSkuToken, expected)
     }
     
     func testSpeechSynthesizerSKU() {
-        let speechSkuToken = SpeechSynthesizer.skuToken
+        let expected: String = UUID().uuidString
+
+        billingServiceMock.onGetSKUTokenIfValid = { _ in
+            expected
+        }
+
+        let speechSynthesizer = SpeechSynthesizer(accessToken: billingServiceMock.accessToken)
+        XCTAssert(speechSynthesizer.skuToken == nil || speechSynthesizer.skuToken == "")
+        BillingHandler.shared.beginBillingSession(for: .freeDrive, uuid: .init())
+
+        let speechSkuToken = speechSynthesizer.skuToken
         
-        XCTAssertNotNil(speechSkuToken)
-        
-        XCTAssertEqual(speechSkuToken?.skuId, SkuID.navigationUser.rawValue)
+        XCTAssertEqual(speechSkuToken, expected)
     }
-    
+
     func testSKUTokensMatch() {
+        BillingHandler.shared.beginBillingSession(for: .freeDrive, uuid: .init())
+        let skuToken = NativeBillingService.shared.getSessionSKUTokenIfValid(for: .nav2SesFDTrip)
+        billingServiceMock.onGetSKUTokenIfValid = { _ in skuToken }
+
         let viewController = TokenTestViewController()
         let tokenExpectation = XCTestExpectation(description: "All tokens should be fetched")
         viewController.tokenExpectation = tokenExpectation
-        
-        let rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!
-        rootViewController.present(viewController, animated: false)
-        
+
+        viewController.simulatateViewControllerPresented()
+
         wait(for: [tokenExpectation], timeout: 5)
-        
-        XCTAssertEqual(viewController.mapViewToken?.skuId, SkuID.navigationUser.rawValue)
-        XCTAssertEqual(viewController.mapViewToken, viewController.directionsToken)
-        XCTAssertEqual(viewController.mapViewToken, viewController.speechSynthesizerToken)
-        
-        let dismissExpectation = XCTestExpectation(description: "VC should be dismissed")
-        viewController.dismiss(animated: false) {
-            dismissExpectation.fulfill()
-        }
-        
-        wait(for: [dismissExpectation], timeout: 3)
+
+        XCTAssertNotEqual(viewController.mapViewToken, viewController.directionsToken)
+        XCTAssertNotEqual(viewController.mapViewToken, viewController.speechSynthesizerToken)
+        XCTAssertEqual(viewController.speechSynthesizerToken, skuToken)
+        XCTAssertEqual(viewController.directionsToken, skuToken)
     }
 }
+#endif

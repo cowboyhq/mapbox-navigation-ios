@@ -1,23 +1,43 @@
+import CoreLocation
 import UIKit
 import MapboxCoreNavigation
 import MapboxDirections
-
-/**
- `BottomBannerViewControllerDelegate` provides a method for reacting to the user tapping on the "cancel" button in the `BottomBannerViewController`.
- */
-public protocol BottomBannerViewControllerDelegate: AnyObject {
-    /**
-     A method that is invoked when the user taps on the cancel button.
-     - parameter sender: The button that originated the tap event.
-     */
-    func didTapCancel(_ sender: Any)
-}
 
 /**
  A user interface element designed to display the estimated arrival time, distance, and time remaining, as well as give the user a control the cancel the navigation session.
  */
 @IBDesignable
 open class BottomBannerViewController: UIViewController, NavigationComponent {
+    
+    var previousProgress: RouteProgress?
+    var timer: DispatchTimer?
+    
+    let dateFormatter = DateFormatter()
+    let dateComponentsFormatter = DateComponentsFormatter()
+    let distanceFormatter = DistanceFormatter()
+    
+    var verticalCompactConstraints = [NSLayoutConstraint]()
+    var verticalRegularConstraints = [NSLayoutConstraint]()
+    
+    var congestionLevel: CongestionLevel = .unknown {
+        didSet {
+            switch congestionLevel {
+            case .unknown:
+                timeRemainingLabel.textColor = timeRemainingLabel.trafficUnknownColor
+            case .low:
+                timeRemainingLabel.textColor = timeRemainingLabel.trafficLowColor
+            case .moderate:
+                timeRemainingLabel.textColor = timeRemainingLabel.trafficModerateColor
+            case .heavy:
+                timeRemainingLabel.textColor = timeRemainingLabel.trafficHeavyColor
+            case .severe:
+                timeRemainingLabel.textColor = timeRemainingLabel.trafficSevereColor
+            }
+        }
+    }
+    
+    // MARK: Child Views Configuration
+    
     /**
      A padded spacer view that covers the bottom safe area of the device, if any.
      */
@@ -59,46 +79,17 @@ open class BottomBannerViewController: UIViewController, NavigationComponent {
     open var horizontalDividerView: SeparatorView!
     
     /**
+     A vertical separator for the trailing side of the view.
+     */
+    var trailingSeparatorView: SeparatorView!
+    
+    // MARK: Setup and Initialization
+    
+    /**
      The delegate for the view controller.
      - seealso: BottomBannerViewControllerDelegate
      */
     open weak var delegate: BottomBannerViewControllerDelegate?
-    
-    var previousProgress: RouteProgress?
-    var timer: DispatchTimer?
-    
-    let dateFormatter = DateFormatter()
-    let dateComponentsFormatter = DateComponentsFormatter()
-    let distanceFormatter = DistanceFormatter()
-    
-    var verticalCompactConstraints = [NSLayoutConstraint]()
-    var verticalRegularConstraints = [NSLayoutConstraint]()
-    
-    var congestionLevel: CongestionLevel = .unknown {
-        didSet {
-            switch congestionLevel {
-            case .unknown:
-                timeRemainingLabel.textColor = timeRemainingLabel.trafficUnknownColor
-            case .low:
-                timeRemainingLabel.textColor = timeRemainingLabel.trafficLowColor
-            case .moderate:
-                timeRemainingLabel.textColor = timeRemainingLabel.trafficModerateColor
-            case .heavy:
-                timeRemainingLabel.textColor = timeRemainingLabel.trafficHeavyColor
-            case .severe:
-                timeRemainingLabel.textColor = timeRemainingLabel.trafficSevereColor
-            }
-        }
-    }
-    /**
-     Initializes a `BottomBannerViewController` that provides estimated arrival time, distance to arrival, and time to arrival.
-     
-     - parameter delegate: A delegate to recieve BottomBannerViewControllerDelegate messages.
-     */
-    @available(swift, obsoleted: 0.1, message: "Set the delegate property separately after initializing this object.")
-    public convenience init(delegate: BottomBannerViewControllerDelegate?) {
-        fatalError()
-    }
     
     /**
      Initializes a `BottomBannerViewController` that provides ETA, Distance to arrival, and Time to arrival.
@@ -164,6 +155,8 @@ open class BottomBannerViewController: UIViewController, NavigationComponent {
         arrivalTimeLabel.text = "10:09"
     }
     
+    // MARK: NavigationComponent support
+    
     public func navigationService(_ service: NavigationService, didRerouteAlong route: Route, at location: CLLocation?, proactive: Bool) {
         refreshETA()
     }
@@ -202,7 +195,7 @@ open class BottomBannerViewController: UIViewController, NavigationComponent {
             distanceRemainingLabel.text = distanceFormatter.string(from: routeProgress.distanceRemaining)
         }
 
-        dateComponentsFormatter.unitsStyle = routeProgress.durationRemaining < 3600 ? .short : .abbreviated
+        dateComponentsFormatter.unitsStyle = DateComponentsFormatter.travelDurationUnitStyle(interval: routeProgress.durationRemaining)
 
         if let hardcodedTime = dateComponentsFormatter.string(from: 61), routeProgress.durationRemaining < 60 {
             timeRemainingLabel.text = String.localizedStringWithFormat(NSLocalizedString("LESS_THAN", bundle: .mapboxNavigation, value: "<%@", comment: "Format string for a short distance or time less than a minimum threshold; 1 = duration remaining"), hardcodedTime)

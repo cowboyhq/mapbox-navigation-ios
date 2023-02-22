@@ -4,33 +4,8 @@ import MapboxNavigationNative
 import Turf
 
 extension CLLocation {
-    var isQualified: Bool {
-        return 0...100 ~= horizontalAccuracy
-    }
-    
-    var isQualifiedForStartingRoute: Bool {
-        return 0...20 ~= horizontalAccuracy
-    }
-    
-    /// Returns a dictionary representation of the location.
-    public var dictionaryRepresentation: [String: Any] {
-        var locationDictionary: [String: Any] = [:]
-        locationDictionary["lat"] = coordinate.latitude
-        locationDictionary["lng"] = coordinate.longitude
-        locationDictionary["altitude"] = altitude
-        locationDictionary["timestamp"] = timestamp.ISO8601
-        locationDictionary["horizontalAccuracy"] = horizontalAccuracy
-        locationDictionary["verticalAccuracy"] = verticalAccuracy
-        if #available(iOS 13.4, *) {
-            locationDictionary["courseAccuracy"] = courseAccuracy
-        }
-        locationDictionary["course"] = course
-        locationDictionary["speed"] = speed
-        locationDictionary["speedAccuracy"] = speedAccuracy
-        return locationDictionary
-    }
-    
     convenience init(_ location: FixLocation) {
+        let timestamp = Date(timeIntervalSince1970: TimeInterval(location.monotonicTimestampNanoseconds) / 1e9)
         if #available(iOS 13.4, *) {
             self.init(coordinate: location.coordinate,
                       altitude: location.altitude?.doubleValue ?? 0,
@@ -40,7 +15,7 @@ extension CLLocation {
                       courseAccuracy: location.bearingAccuracy?.doubleValue ?? -1,
                       speed: location.speed?.doubleValue ?? -1,
                       speedAccuracy: location.speedAccuracy?.doubleValue ?? -1,
-                      timestamp: location.time)
+                      timestamp: timestamp)
         } else {
             self.init(coordinate: location.coordinate,
                       altitude: location.altitude?.doubleValue ?? 0,
@@ -48,8 +23,16 @@ extension CLLocation {
                       verticalAccuracy: location.verticalAccuracy?.doubleValue ?? -1,
                       course: location.bearing?.doubleValue ?? -1,
                       speed: location.speed?.doubleValue ?? -1,
-                      timestamp: location.time)
+                      timestamp: timestamp)
         }
+    }
+    
+    var isQualified: Bool {
+        return 0...100 ~= horizontalAccuracy
+    }
+    
+    var isQualifiedForStartingRoute: Bool {
+        return 0...20 ~= horizontalAccuracy
     }
     
     /**

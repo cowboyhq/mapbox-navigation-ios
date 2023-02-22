@@ -1,11 +1,12 @@
 import Foundation
 import XCTest
+import CoreLocation
 import MapboxDirections
 import MapboxCoreNavigation
 import TestHelper
 @testable import MapboxNavigation
 
-class InstructionPresenterTests: XCTestCase {
+class InstructionPresenterTests: TestCase {
     func testExitInstructionProvidesExit() {
         let exitAttribute = VisualInstruction.Component.exit(text: .init(text: "Exit", abbreviation: nil, abbreviationPriority: nil))
         let exitCodeAttribute = VisualInstruction.Component.exitCode(text: .init(text: "123A", abbreviation: nil, abbreviationPriority: nil))
@@ -16,7 +17,11 @@ class InstructionPresenterTests: XCTestCase {
         //FIXME: not ideal -- UIAutoLayout?
         label.availableBounds = { return CGRect(origin: .zero, size: CGSize.iPhoneX) }
 
-        let presenter = InstructionPresenter(exitInstruction, dataSource: label, downloadCompletion: nil)
+        let presenter = InstructionPresenter(exitInstruction,
+                                             dataSource: label,
+                                             traitCollection: UITraitCollection(userInterfaceIdiom: .phone),
+                                             downloadCompletion: nil)
+        
         let attributed = presenter.attributedText()
 
         let attachment = attributed.attribute(.attachment, at: 0, effectiveRange: nil)
@@ -39,7 +44,10 @@ class InstructionPresenterTests: XCTestCase {
         
         self.measure {
             for instruction in instructions {
-                let presenter = InstructionPresenter(instruction, dataSource: label, downloadCompletion: nil)
+                let presenter = InstructionPresenter(instruction,
+                                                     dataSource: label,
+                                                     traitCollection: UITraitCollection(userInterfaceIdiom: .phone),
+                                                     downloadCompletion: nil)
                 label.attributedText = presenter.attributedText()
             }
         }
